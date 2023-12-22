@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+FC = True
 DEFAULT_CONFIDENCE = 0.9
 MAX_EXPECTED_TRAVEL_DISTANCE = 20
 PROP_MOD = 'f1'

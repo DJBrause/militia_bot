@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Union
 
 import cv2
 import pyautogui
@@ -8,9 +8,9 @@ from easyocr import Reader
 import keyboard
 from PIL import Image
 import winsound
+import random
 
 from constants import *
-from navigation import approach, orbit_target
 
 # todo killing rat at the plex
 # todo scanning for hostiles
@@ -45,7 +45,7 @@ def region_selector():
 
 
 def search_for_string_in_region(searched_string: str, region: Tuple, image_file: Image,
-                                move_mouse_to_string: bool = False, debug: bool = False) -> bool:
+                                move_mouse_to_string: bool = False, debug: bool = False) -> Union[bool, list]:
     results = ocr_reader.readtext(image_file)
     if debug:
         print(results)
@@ -55,7 +55,7 @@ def search_for_string_in_region(searched_string: str, region: Tuple, image_file:
                 middle_of_bounding_box = bounding_box_center_coordinates(result[0], region=region)
                 if move_mouse_to_string:
                     pyautogui.moveTo(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
-                return True
+                return middle_of_bounding_box
         return False
     except TypeError:
         return False
@@ -172,7 +172,6 @@ def target_and_engage_a_hostile_ship(region: Tuple, overview_content: list, ship
 
             for _ in range(3):
                 approach()
-            # counter = 0
             while True:
                 target_lock()
                 time.sleep(0.2)
@@ -265,8 +264,157 @@ def target_broadcast_ship(region: Tuple) -> None:
         pyautogui.keyUp('ctrl')
 
 
-# Undock, fly to scout site, kill rat, attack hostile if it warps in and call help,
-# check if the ship is targetted still or not, if the plex finishes, fly back to station or safe spot.
+def undock():
+    undock_keys = ['ctrl', 'shift', 'x']
+    for key in undock_keys:
+        pyautogui.keyDown(key)
+    time.sleep(0.2)
+    for key in undock_keys:
+        pyautogui.keyUp(key)
+
+
+def approach() -> None:
+    pyautogui.keyDown('q')
+    pyautogui.click()
+    pyautogui.keyUp('q')
+
+
+def orbit_target() -> None:
+    pyautogui.keyDown('w')
+    pyautogui.click()
+    pyautogui.keyUp('w')
+
+
+def check_if_in_warp() -> bool:
+    screenshot_of_the_bottom_of_the_screen = jpg_screenshot_of_the_selected_region(capacitor_region)
+    if search_for_string_in_region('wa', capacitor_region, screenshot_of_the_bottom_of_the_screen, debug=True):
+        return True
+    return False
+
+
+def set_destination_home() -> None:
+    pyautogui.keyDown('alt')
+    pyautogui.press('a')
+    pyautogui.keyUp('alt')
+    screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
+    search_for_string_in_region('home station', mid_to_top_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
+    search_for_string_in_region('set destination', mid_to_top_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    pyautogui.keyDown('alt')
+    pyautogui.press('a')
+    pyautogui.keyUp('alt')
+
+
+def warp_to_scout_combat_site(region: Tuple) -> None:
+    screenshot_of_scanner = jpg_screenshot_of_the_selected_region(region)
+    search_for_string_in_region('probe', scanner_region, screenshot_of_scanner, True)
+    pyautogui.click()
+    screenshot_of_scanner = jpg_screenshot_of_the_selected_region(region)
+    search_for_string_in_region('scout', scanner_region, screenshot_of_scanner, True)
+    pyautogui.rightClick()
+    screenshot_of_scanner_with_warp_to_option = jpg_screenshot_of_the_selected_region(region)
+    search_for_string_in_region('to within', scanner_region, screenshot_of_scanner_with_warp_to_option, True)
+    pyautogui.click()
+    beep_x_times(2)
+
+
+def jump_through_acceleration_gate(region: Tuple) -> None:
+    overview_and_selected_item_screenshot = jpg_screenshot_of_the_selected_region(region)
+    search_for_string_in_region('acceleration', overview_and_selected_item_region,
+                                overview_and_selected_item_screenshot,
+                                True)
+    pyautogui.click()
+    time.sleep(0.1)
+    for _ in range(3):
+        pyautogui.press('d')
+        time.sleep(0.2)
+
+
+def jump_through_gate_to_destination() -> bool:
+    try:
+        next_gate_on_route = pyautogui.locateCenterOnScreen(gate_on_route, confidence=DEFAULT_CONFIDENCE,
+                                                            grayscale=False, region=overview_and_selected_item_region)
+        if next_gate_on_route is not None:
+            pyautogui.moveTo(x=next_gate_on_route[0], y=next_gate_on_route[1])
+            pyautogui.keyDown('d')
+            pyautogui.click()
+            pyautogui.keyUp('d')
+            move_mouse_away_from_overview()
+            return True
+    except pyautogui.ImageNotFoundException:
+        return False
+
+
+def travel_to_destination() -> None:
+    for _ in range(MAX_EXPECTED_TRAVEL_DISTANCE):
+        if not jump_through_gate_to_destination():
+            break
+        time.sleep(2)
+        for c in range(100):
+            if not check_if_in_warp():
+                beep_x_times(2)
+                break
+            time.sleep(1)
+        time.sleep(12)
+    notification_beep()
+
+
+def dock_at_station() -> None:
+    stations = [destination_station, destination_home_station]
+    for station in stations:
+        try:
+            docking_station = pyautogui.locateCenterOnScreen(station, confidence=DEFAULT_CONFIDENCE,
+                                                             grayscale=False,
+                                                             region=overview_and_selected_item_region)
+            if docking_station is not None:
+                pyautogui.moveTo(x=docking_station[0], y=docking_station[1])
+                pyautogui.keyDown('d')
+                pyautogui.click()
+                pyautogui.keyUp('d')
+                break
+        except pyautogui.ImageNotFoundException:
+            pass
+
+
+def open_or_close_notepad() -> None:
+    pyautogui.keyDown('ctrl')
+    pyautogui.press('n')
+    pyautogui.keyUp('ctrl')
+
+
+def choose_system_to_travel_to() -> str:
+    random_system = random.choice(minmatar_systems)
+    return random_system
+
+
+def select_and_broadcast_destination(region: Tuple) -> None:
+    open_or_close_notepad()
+    time.sleep(0.2)
+    destination = choose_system_to_travel_to()
+    screenshot = jpg_screenshot_of_the_selected_region(region)
+    system = search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
+    if system:
+        pyautogui.rightClick()
+        time.sleep(0.2)
+    screenshot = jpg_screenshot_of_the_selected_region(region)
+    destination_confirmation = search_for_string_in_region('destination', region, screenshot, move_mouse_to_string=True)
+    if destination_confirmation:
+        pyautogui.click()
+        time.sleep(0.2)
+        pyautogui.moveTo(system[0], system[1])
+        pyautogui.rightClick()
+        time.sleep(0.2)
+    screenshot = jpg_screenshot_of_the_selected_region(region)
+    broadcast = search_for_string_in_region('broadcast', region, screenshot, move_mouse_to_string=True)
+    if broadcast:
+        pyautogui.click()
+    open_or_close_notepad()
+
+
+# Undock, fly to system with scout site, kill rat, attack hostile if it warps in and call help,
+# check if the ship is targeted still or not, if the plex finishes, fly back to station or safe spot.
 def main_loop() -> None:
     # undock()
     # warp_to_scout_combat_site(probe_scanner_region)
@@ -298,4 +446,4 @@ if __name__ == "__main__":
     # dock_at_station()
     # warp_to_safe_spot()
 
-    target_broadcast_ship(scanner_region)
+    select_and_broadcast_destination(top_left_region)
