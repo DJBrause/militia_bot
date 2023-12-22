@@ -1,5 +1,8 @@
 from typing import Tuple, List, Union
-from pathlib import Path
+import os
+import json
+from dotenv import load_dotenv
+import ast
 
 import cv2
 import pyautogui
@@ -10,25 +13,33 @@ import keyboard
 from PIL import Image
 import winsound
 
-DEFAULT_CONFIDENCE = 0.8
+load_dotenv()
+
+DEFAULT_CONFIDENCE = 0.9
+MAX_EXPECTED_TRAVEL_DISTANCE = 20
 PROP_MOD = 'f1'
 TACKLE_MODS = ['f2', 'f3']
 GUNS = 'f4'
 
 ocr_reader = Reader(['en'])
-probe_scanner_region = (2836, 811, 603, 627)
-screen_center_region = (1146, 360, 1318, 780)
-bottom_of_the_screen_region = (1408, 1251, 306, 169)
-overview_and_selected_item_region = (2900, 0, 539, 937)
-top_left_region = (0, 0, 354, 401)
-local_window_region = (43, 810, 398, 239)
-chat_window_region = (52, 1396, 384, 37)
-mid_to_top_region = (1160, 1, 976, 730)
-test_region = (2704, 1, 732, 977)
+probe_scanner_region = ast.literal_eval(os.environ.get('PROBE_SCANNER_REGION'))
+screen_center_region = ast.literal_eval(os.environ.get('SCREEN_CENTER_REGION'))
+capacitor_region = ast.literal_eval(os.environ.get('CAPACITOR_REGION'))
+overview_and_selected_item_region = ast.literal_eval(os.environ.get('OVERVIEW_AND_SELECTED_ITEM_REGION'))
+top_left_region = ast.literal_eval(os.environ.get('TOP_LEFT_REGION'))
+local_window_region = ast.literal_eval(os.environ.get('LOCAL_WINDOW_REGION'))
+chat_window_region = ast.literal_eval(os.environ.get('CHAT_WINDOW_REGION'))
+mid_to_top_region = ast.literal_eval(os.environ.get('MID_TO_TOP_REGION'))
+targets_region = ast.literal_eval(os.environ.get('TARGETS_REGION'))
+test_region = ast.literal_eval(os.environ.get('TEST_REGION'))
 
 unlock_target_image = 'images/unlock_icon.PNG'
 cannot_lock_icon = 'images/cannot_lock.PNG'
 lock_target_icon = 'images/lock_target.PNG'
+scrambler_on_icon = 'images/scrambler_on.PNG'
+gate_on_route = 'images/gate_on_route.PNG'
+destination_station = 'images/destination_station.PNG'
+destination_home_station = 'images/destination_home_station.PNG'
 
 amarr_frigates = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer']
 caldari_frigates = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill']
@@ -43,6 +54,7 @@ all_frigates = amarr_frigates + caldari_frigates + gallente_frigates + minmatar_
 # todo GTFO if conditions are unfavorable
 # todo if FC - sending broadcasts
 # todo if wingman, then warping to FC and aggroing broadcast target
+# todo warping to safespot
 # todo report local system needs further work // Auto Link -> Solar System
 
 
@@ -153,9 +165,9 @@ def bounding_box_center_coordinates(bounding_box: List, region: Tuple) -> [int, 
     return x_center, y_center
 
 
-def check_if_in_warp(region: Tuple) -> bool:
-    screenshot_of_the_bottom_of_the_screen = jpg_screenshot_of_the_selected_region(region)
-    if search_for_string_in_region('warp', bottom_of_the_screen_region, screenshot_of_the_bottom_of_the_screen, False):
+def check_if_in_warp() -> bool:
+    screenshot_of_the_bottom_of_the_screen = jpg_screenshot_of_the_selected_region(capacitor_region)
+    if search_for_string_in_region('wa', capacitor_region, screenshot_of_the_bottom_of_the_screen, debug=True):
         return True
     return False
 
@@ -218,9 +230,9 @@ def check_if_target_is_outside_range() -> bool:
 
 def check_if_within_targeting_range() -> bool:
     try:
-        target_is_lockable = pyautogui.locateCenterOnScreen(lock_target_icon, confidence=0.99, region=overview_and_selected_item_region)
+        target_is_lockable = pyautogui.locateCenterOnScreen(lock_target_icon, confidence=0.99,
+                                                            region=overview_and_selected_item_region)
         if target_is_lockable is not None:
-            print(target_is_lockable)
             return True
     except pyautogui.ImageNotFoundException:
         return False
@@ -244,8 +256,14 @@ def turn_recording_on_or_off() -> None:
     pyautogui.keyUp('alt')
 
 
+def orbit_target() -> None:
+    pyautogui.keyDown('w')
+    pyautogui.click()
+    pyautogui.keyUp('w')
+
+
 def target_and_engage_a_hostile_ship(region: Tuple, overview_content: list, ship: str) -> None:
-    turn_recording_on_or_off()
+    # turn_recording_on_or_off()
     for item in overview_content:
         if ship in item[1]:
             coordinates = bounding_box_center_coordinates(bounding_box=item[0], region=region)
@@ -254,34 +272,26 @@ def target_and_engage_a_hostile_ship(region: Tuple, overview_content: list, ship
             # Use AB/MWD
             pyautogui.press(PROP_MOD)
 
-            approach()
-
+            for _ in range(3):
+                approach()
+            # counter = 0
             while True:
                 target_lock()
                 time.sleep(0.2)
-                if check_if_target_is_outside_range():
-                    pass
-                else:
-                    break
-
-            target_lock()
-
-            while True:
                 if check_if_target_is_locked(overview_and_selected_item_region):
+                    for _ in range(3):
+                        orbit_target()
+                        time.sleep(0.1)
                     break
-                target_lock()
-
 
             # Fire guns and try to tackle
             pyautogui.press(GUNS)
-            mods = TACKLE_MODS
-            while len(mods) != 0:
-                for mod in mods:
-                    pyautogui.press(mod)
-                    if check_if_target_is_outside_range():
-                        pass
-                    else:
-                        mods.remove(mod)
+
+            while True:
+                if not check_if_scrambler_is_operating():
+                    pyautogui.press('f2')
+                else:
+                    break
 
             notification_beep()
 
@@ -291,13 +301,106 @@ def check_if_target_is_locked(region: Tuple) -> bool:
         unlock_target_icon_present = pyautogui.locateCenterOnScreen(unlock_target_image, grayscale=False,
                                                                     confidence=DEFAULT_CONFIDENCE, region=region)
         if unlock_target_icon_present is not None:
+            pyautogui.moveTo(x=unlock_target_icon_present[0], y=unlock_target_icon_present[1])
             return True
     except pyautogui.ImageNotFoundException:
         return False
 
 
+def check_if_scrambler_is_operating() -> bool:
+    try:
+        if pyautogui.locateCenterOnScreen(scrambler_on_icon, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+                                          region=targets_region):
+            return True
+        return False
+    except pyautogui.ImageNotFoundException:
+        pass
+
+
 def manage_engagement() -> None:
-    pass
+    if not check_if_target_is_locked(overview_and_selected_item_region):
+        pass
+
+
+def set_destination_home() -> None:
+    pyautogui.keyDown('alt')
+    pyautogui.press('a')
+    pyautogui.keyUp('alt')
+    screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
+    search_for_string_in_region('home station', mid_to_top_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
+    search_for_string_in_region('set destination', mid_to_top_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    pyautogui.keyDown('alt')
+    pyautogui.press('a')
+    pyautogui.keyUp('alt')
+
+
+def jump_through_gate_to_destination() -> bool:
+    try:
+        next_gate_on_route = pyautogui.locateCenterOnScreen(gate_on_route, confidence=DEFAULT_CONFIDENCE,
+                                                            grayscale=False, region=overview_and_selected_item_region)
+        if next_gate_on_route is not None:
+            pyautogui.moveTo(x=next_gate_on_route[0], y=next_gate_on_route[1])
+            pyautogui.keyDown('d')
+            pyautogui.click()
+            pyautogui.keyUp('d')
+            move_mouse_away_from_overview()
+            return True
+    except pyautogui.ImageNotFoundException:
+        return False
+
+
+def travel_to_destination() -> None:
+    for _ in range(MAX_EXPECTED_TRAVEL_DISTANCE):
+        if not jump_through_gate_to_destination():
+            break
+        time.sleep(2)
+        for c in range(100):
+            if not check_if_in_warp():
+                beep_x_times(2)
+                break
+            time.sleep(1)
+        time.sleep(12)
+    notification_beep()
+
+
+def dock_at_station() -> None:
+    stations = [destination_station, destination_home_station]
+    for station in stations:
+        try:
+            docking_station = pyautogui.locateCenterOnScreen(station, confidence=DEFAULT_CONFIDENCE,
+                                                             grayscale=False,
+                                                             region=overview_and_selected_item_region)
+            if docking_station is not None:
+                pyautogui.moveTo(x=docking_station[0], y=docking_station[1])
+                pyautogui.keyDown('d')
+                pyautogui.click()
+                pyautogui.keyUp('d')
+                break
+        except pyautogui.ImageNotFoundException:
+            pass
+
+
+def move_mouse_away_from_overview() -> None:
+    pyautogui.moveTo(x=100, y=10)
+
+
+def warp_to_safe_spot() -> None:
+    pyautogui.moveTo(x=50, y=30)
+    pyautogui.rightClick()
+    time.sleep(0.1)
+    screenshot = jpg_screenshot_of_the_selected_region(top_left_region)
+    search_for_string_in_region('loc', top_left_region, screenshot, move_mouse_to_string=True, debug=True)
+    pyautogui.click()
+    time.sleep(0.1)
+    screenshot = jpg_screenshot_of_the_selected_region(top_left_region)
+    for _ in range(5):
+        search_for_string_in_region('spo', top_left_region, screenshot, move_mouse_to_string=True, debug=True)
+        pyautogui.click()
+        break
+
 
 # Undock, fly to scout site, kill rat, attack hostile if it warps in and call help,
 # check if the ship is targetted still or not, if the plex finishes, fly back to station or safe spot.
@@ -323,10 +426,11 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    # time.sleep(3)
     # region_selector()
-    main_loop()
-
-
-
-
+    # main_loop()
+    # undock()
+    # time.sleep(5)
+    # set_destination_home()
+    # travel_to_destination()
+    # dock_at_station()
+    warp_to_safe_spot()
