@@ -17,7 +17,9 @@ from constants import *
 # todo GTFO if conditions are unfavorable
 # todo if FC - sending broadcasts
 # todo if wingman, then warping to FC and aggroing broadcast target
-# todo report local system needs further work // Auto Link -> Solar System
+# todo report local system needs further work - make it broadcast location
+# todo create status checklist to make sure all steps were completed successfully
+# todo create confusion detection to check if bot is stuck
 
 
 ocr_reader = Reader(['en'])
@@ -104,7 +106,6 @@ def report_local_system() -> None:
     pass
 
 
-
 def test_check_region(region) -> list:
     overview_and_selected_item_screenshot = jpg_screenshot_of_the_selected_region(region)
     test_result = ocr_reader.readtext(overview_and_selected_item_screenshot)
@@ -151,9 +152,7 @@ def target_lock() -> None:
 
 
 def turn_recording_on_or_off() -> None:
-    pyautogui.keyDown('alt')
-    pyautogui.press('f9')
-    pyautogui.keyUp('alt')
+    pyautogui.hotkey('alt', 'f9', interval=0.1)
 
 
 def target_and_engage_a_hostile_ship(region: Tuple, overview_content: list, ship: str) -> None:
@@ -261,12 +260,7 @@ def target_broadcast_ship(region: Tuple) -> None:
 
 
 def undock():
-    undock_keys = ['ctrl', 'shift', 'x']
-    for key in undock_keys:
-        pyautogui.keyDown(key)
-    time.sleep(0.2)
-    for key in undock_keys:
-        pyautogui.keyUp(key)
+    pyautogui.hotkey('ctrl', 'shift', 'x', interval=0.1)
     move_mouse_away_from_overview()
 
 
@@ -283,25 +277,22 @@ def orbit_target() -> None:
 
 
 def check_if_in_warp() -> bool:
-    screenshot_of_the_bottom_of_the_screen = jpg_screenshot_of_the_selected_region(capacitor_region)
-    if search_for_string_in_region('wa', capacitor_region, screenshot_of_the_bottom_of_the_screen):
+    screenshot = jpg_screenshot_of_the_selected_region(capacitor_region)
+    if search_for_string_in_region('wa', capacitor_region, screenshot, debug=True):
         return True
     return False
 
 
 def set_destination_home() -> None:
-    pyautogui.keyDown('alt')
-    pyautogui.press('a')
-    pyautogui.keyUp('alt')
+    pyautogui.hotkey('alt', 'a', interval=0.1)
     screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
     search_for_string_in_region('home station', mid_to_top_region, screenshot, move_mouse_to_string=True)
     pyautogui.click()
     screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
     search_for_string_in_region('set destination', mid_to_top_region, screenshot, move_mouse_to_string=True)
     pyautogui.click()
-    pyautogui.keyDown('alt')
-    pyautogui.press('a')
-    pyautogui.keyUp('alt')
+    pyautogui.hotkey('alt', 'a', interval=0.1)
+
 
 
 def warp_to_scout_combat_site(region: Tuple) -> None:
@@ -341,28 +332,19 @@ def jump_through_gate_to_destination() -> bool:
             move_mouse_away_from_overview()
             return True
     except pyautogui.ImageNotFoundException:
-        select_gates_only_tab()
-        next_gate_on_route = pyautogui.locateCenterOnScreen(gate_on_route, confidence=DEFAULT_CONFIDENCE,
-                                                            grayscale=False, region=overview_and_selected_item_region)
-        if next_gate_on_route is not None:
-            pyautogui.moveTo(x=next_gate_on_route[0], y=next_gate_on_route[1])
-            pyautogui.keyDown('d')
-            pyautogui.click()
-            pyautogui.keyUp('d')
-            select_fw_tab()
-            move_mouse_away_from_overview()
-            return True
-    finally:
-        select_fw_tab()
         return False
 
 
 def travel_to_destination() -> None:
     for _ in range(MAX_EXPECTED_TRAVEL_DISTANCE):
         if not jump_through_gate_to_destination():
-            break
-        time.sleep(2)
-        for c in range(100):
+            select_gates_only_tab()
+            if not jump_through_gate_to_destination():
+                select_fw_tab()
+                break
+
+        for _ in range(100):
+            time.sleep(3)
             if not check_if_in_warp():
                 beep_x_times(2)
                 break
@@ -389,9 +371,7 @@ def dock_at_station() -> None:
 
 
 def open_or_close_notepad() -> None:
-    pyautogui.keyDown('ctrl')
-    pyautogui.press('n')
-    pyautogui.keyUp('ctrl')
+    pyautogui.hotkey('ctrl', 'n', interval=0.1)
 
 
 def choose_system_to_travel_to() -> str:
@@ -407,47 +387,71 @@ def check_if_docked(region: Tuple) -> bool:
     return False
 
 
-def set_and_broadcast_destination(region: Tuple) -> None:
+def check_if_destination_system_was_reached(destination: str, region: Tuple) -> bool:
+    switch_tab_to_broadcasts(region)
+    clear_broadcast_history(region)
+    broadcast_current_location()
+    time.sleep(0.2)
+    screenshot = jpg_screenshot_of_the_selected_region(region)
+    if search_for_string_in_region(destination, region, screenshot):
+        return True
+    return False
+
+
+def set_and_broadcast_destination(region: Tuple) -> Union[bool, str]:
     select_gates_only_tab()
     move_mouse_away_from_overview()
-    time.sleep(0.2)
-    open_or_close_notepad()
     time.sleep(0.5)
+    open_or_close_notepad()
+    time.sleep(4)
     destination = choose_system_to_travel_to()
     screenshot = jpg_screenshot_of_the_selected_region(region)
     system = search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
     if system:
+        time.sleep(0.5)
         pyautogui.rightClick()
         time.sleep(0.5)
     else:
         open_or_close_notepad()
-        return
+        return False
     screenshot = jpg_screenshot_of_the_selected_region(region)
     destination_confirmation = search_for_string_in_region('destination', region, screenshot, move_mouse_to_string=True)
     if destination_confirmation:
         pyautogui.click()
-        time.sleep(0.5)
         pyautogui.moveTo(system[0], system[1])
+        time.sleep(0.5)
+        # pyautogui.rightClick(x,y) clicks first, then moves to coordinates causing issues
         pyautogui.rightClick()
         time.sleep(0.5)
     screenshot = jpg_screenshot_of_the_selected_region(region)
     broadcast = search_for_string_in_region('broadcast', region, screenshot, move_mouse_to_string=True)
     if broadcast:
+        time.sleep(0.5)
         pyautogui.click()
     select_fw_tab()
     open_or_close_notepad()
+    return destination
 
 
-def form_fleet():
-    pyautogui.keyDown('ctrl')
-    pyautogui.keyDown('alt')
-    pyautogui.press('f')
-    pyautogui.keyUp('ctrl')
-    pyautogui.keyUp('alt')
+def form_fleet() -> None:
+    pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
     time.sleep(0.2)
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
-    search_for_string_in_region('form fleet', scanner_region, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
+    form_fleet_button = search_for_string_in_region('form fleet', scanner_region, screenshot, move_mouse_to_string=True)
+    if form_fleet_button:
+        pyautogui.click()
+    else:
+        results = ocr_reader.readtext(screenshot)
+        for result in results:
+            searched_string = 'fleet'
+            if searched_string.lower() in result[1].lower():
+                middle_of_bounding_box = bounding_box_center_coordinates(result[0], region=scanner_region)
+                pyautogui.click(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
+                screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+            if search_for_string_in_region('form fleet', scanner_region, screenshot, move_mouse_to_string=True):
+                pyautogui.click()
+                move_mouse_away_from_overview()
+                return
 
 
 def select_gates_only_tab() -> None:
@@ -469,15 +473,29 @@ def travel_to_destination_as_fc() -> None:
         undock()
         time.sleep(20)
     # cannot broadcast destination while docked
-    set_and_broadcast_destination(top_left_region)
-    travel_to_destination()
-    warp_to_safe_spot()
+    destination = set_and_broadcast_destination(top_left_region)
+    if destination:
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if not check_if_destination_system_was_reached(destination, scanner_region):
+                travel_to_destination()
+            else:
+                break
+        warp_to_safe_spot()
 
 
 def travel_home() -> None:
     set_destination_home()
-    travel_to_destination()
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        if not check_if_destination_system_was_reached(home_system, scanner_region):
+            travel_to_destination()
+        else:
+            break
     dock_at_station()
+
+
+def broadcast_current_location() -> None:
+    pyautogui.press(',')
+
 
 # Undock, fly to system with scout site, kill rat, attack hostile if it warps in and call help,
 # check if the ship is targeted still or not, if the plex finishes, fly back to station or safe spot.
@@ -505,7 +523,8 @@ def main_loop() -> None:
 if __name__ == "__main__":
     # region_selector()
     # main_loop()
-    # travel_to_destination_as_fc()
-    # travel_home()
+    travel_to_destination_as_fc()
+    time.sleep(15)
+    travel_home()
 
 

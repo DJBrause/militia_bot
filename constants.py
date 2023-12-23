@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+MAX_NUMBER_OF_ATTEMPTS = 20
 FC = True
 DEFAULT_CONFIDENCE = 0.9
 MAX_EXPECTED_TRAVEL_DISTANCE = 50
@@ -30,6 +31,7 @@ top_left_region = ast.literal_eval(os.environ.get('TOP_LEFT_REGION'))
 mid_to_top_region = ast.literal_eval(os.environ.get('MID_TO_TOP_REGION'))
 targets_region = ast.literal_eval(os.environ.get('TARGETS_REGION'))
 test_region = ast.literal_eval(os.environ.get('TEST_REGION'))
+home_system = os.environ.get('HOME')
 
 amarr_frigates = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer']
 caldari_frigates = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill']
