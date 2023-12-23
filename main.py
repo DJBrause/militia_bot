@@ -17,7 +17,6 @@ from constants import *
 # todo GTFO if conditions are unfavorable
 # todo if FC - sending broadcasts
 # todo if wingman, then warping to FC and aggroing broadcast target
-# todo warping to safespot
 # todo report local system needs further work // Auto Link -> Solar System
 
 
@@ -101,12 +100,9 @@ def notification_beep() -> None:
 
 
 def report_local_system() -> None:
-    local_system = get_and_return_system_name(local_window_region)
-    pyautogui.moveTo(chat_window_region[0] + 5, chat_window_region[1] + 5)
-    pyautogui.click()
-    pyautogui.write(local_system[-1][1])
-    pyautogui.rightClick()
-    beep_x_times(3)
+    # just broadcast position
+    pass
+
 
 
 def test_check_region(region) -> list:
@@ -511,7 +507,5 @@ if __name__ == "__main__":
     # main_loop()
     # travel_to_destination_as_fc()
     # travel_home()
-    undock()
-    time.sleep(15)
-    jump_through_gate_to_destination()
+
 
