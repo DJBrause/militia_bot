@@ -20,6 +20,7 @@ scrambler_on_icon = 'images/scrambler_on.PNG'
 gate_on_route = 'images/gate_on_route.PNG'
 destination_station = 'images/destination_station.PNG'
 destination_home_station = 'images/destination_home_station.PNG'
+dscan_slider = 'images/dscan_slider.PNG'
 
 scanner_region = ast.literal_eval(os.environ.get('SCANNER_REGION'))
 # screen_center_region = ast.literal_eval(os.environ.get('SCREEN_CENTER_REGION'))

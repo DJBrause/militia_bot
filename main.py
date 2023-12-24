@@ -23,6 +23,7 @@ from constants import *
 
 
 ocr_reader = Reader(['en'])
+dscan_confidence = 0.65
 
 
 def region_selector():
@@ -497,6 +498,107 @@ def broadcast_current_location() -> None:
     pyautogui.press(',')
 
 
+def select_directional_scanner() -> None:
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('direct', scanner_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+
+
+def set_dscan_range_to_minimum() -> None:
+    range_slider = None
+    screen_width, screen_height = pyautogui.size()
+    sliders = pyautogui.locateAllOnScreen(dscan_slider, confidence=dscan_confidence, region=scanner_region)
+    for slider in sliders:
+        if range_slider is None:
+            range_slider = slider
+        if slider[0] < range_slider[0]:
+            range_slider = slider
+    x = range_slider[0] + (range_slider[2]/2)
+    y = range_slider[1] + (range_slider[3]/2)
+    pyautogui.moveTo(x=x, y=y)
+    pyautogui.click()
+    pyautogui.dragTo(screen_width*0.80, y, 0.5, button='left')
+    move_mouse_away_from_overview()
+
+
+def set_dscan_range_to_maximum() -> None:
+    range_slider = None
+    screen_width, screen_height = pyautogui.size()
+    sliders = pyautogui.locateAllOnScreen(dscan_slider, confidence=dscan_confidence, region=scanner_region)
+    for slider in sliders:
+        if range_slider is None:
+            range_slider = slider
+        if slider[0] < range_slider[0]:
+            range_slider = slider
+    x = range_slider[0] + (range_slider[2] / 2)
+    y = range_slider[1] + (range_slider[3] / 2)
+    pyautogui.moveTo(x=x, y=y)
+    pyautogui.click()
+    pyautogui.dragTo(screen_width * 0.95, y, 0.5, button='left')
+    move_mouse_away_from_overview()
+
+
+def set_dscan_angle_to_five_degree() -> None:
+    angle_slider = None
+    screen_width, screen_height = pyautogui.size()
+    sliders = pyautogui.locateAllOnScreen(dscan_slider, confidence=dscan_confidence, region=scanner_region)
+    for slider in sliders:
+        if angle_slider is None:
+            angle_slider = slider
+        if slider[0] > angle_slider[0]:
+            angle_slider = slider
+    x = angle_slider[0] + (angle_slider[2] / 2)
+    y = angle_slider[1] + (angle_slider[3] / 2)
+    pyautogui.moveTo(x=x, y=y)
+    pyautogui.click()
+    pyautogui.dragTo(screen_width * 0.85, y, 0.5, button='left')
+    move_mouse_away_from_overview()
+
+
+def set_dscan_angle_to_three_sixty_degree() -> None:
+    angle_slider = None
+    screen_width, screen_height = pyautogui.size()
+    sliders = pyautogui.locateAllOnScreen(dscan_slider, confidence=dscan_confidence, region=scanner_region)
+    for slider in sliders:
+        if angle_slider is None:
+            angle_slider = slider
+        if slider[0] > angle_slider[0]:
+            angle_slider = slider
+    x = angle_slider[0] + (angle_slider[2] / 2)
+    y = angle_slider[1] + (angle_slider[3] / 2)
+    pyautogui.moveTo(x=x, y=y)
+    pyautogui.click()
+    pyautogui.dragTo(screen_width, y, 0.5, button='left')
+    move_mouse_away_from_overview()
+
+
+def dscan_locations_of_interest(scan_target: str = '') -> None:
+    range_to_scan_target = None
+    screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
+    results = ocr_reader.readtext(screenshot)
+
+    searched_term = next((r for r in results if str(r[1]).lower() == scan_target), None)
+    matching_items = [r for r in results if r[0][2][1] == searched_term[0][2][1]]
+    for item in matching_items:
+        new_item_with_period = item.replace(',', '.')
+        if 'AU' in new_item_with_period[1]:
+            range_to_scan_target = float(new_item_with_period[1][:-3])
+        else:
+            range_to_scan_target = float(new_item_with_period[1])
+    
+
+    #
+    # if debug:
+    #     print(results)
+    # try:
+    #     for result in results:
+    #         if searched_string.lower() in result[1].lower():
+    #             middle_of_bounding_box = bounding_box_center_coordinates(result[0], region=region)
+    #             if move_mouse_to_string:
+    #                 pyautogui.moveTo(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
+    #             return middle_of_bounding_box
+
+
 # Undock, fly to system with scout site, kill rat, attack hostile if it warps in and call help,
 # check if the ship is targeted still or not, if the plex finishes, fly back to station or safe spot.
 def main_loop() -> None:
@@ -523,8 +625,9 @@ def main_loop() -> None:
 if __name__ == "__main__":
     # region_selector()
     # main_loop()
-    travel_to_destination_as_fc()
-    time.sleep(15)
-    travel_home()
+    # travel_to_destination_as_fc()
+    # time.sleep(15)
+    print(dscan_locations_of_interest())
+
 
 
