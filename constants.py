@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MAX_NUMBER_OF_ATTEMPTS = 20
-FC = True
+IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
 MAX_EXPECTED_TRAVEL_DISTANCE = 50
 PROP_MOD = 'f1'

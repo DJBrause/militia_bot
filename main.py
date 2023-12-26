@@ -17,6 +17,7 @@ from constants import *
 # todo GTFO if conditions are unfavorable
 # todo if FC - sending broadcasts
 # todo if wingman, then warping to FC and aggroing broadcast target
+# todo create a listener on FC side that will detect 'in position' broadcast to broadcast destination in return
 # todo report local system needs further work - make it broadcast location
 # todo create status checklist to make sure all steps were completed successfully
 # todo create confusion detection to check if bot is stuck
@@ -24,6 +25,7 @@ from constants import *
 
 ocr_reader = Reader(['en'])
 dscan_confidence = 0.65
+destination = None
 
 
 def region_selector():
@@ -47,19 +49,24 @@ def region_selector():
 
 
 def search_for_string_in_region(searched_string: str, region: Tuple, image_file: Image,
-                                move_mouse_to_string: bool = False, debug: bool = False) -> Union[bool, list]:
+                                move_mouse_to_string: bool = False, selected_result: int = 0, debug: bool = False)\
+        -> Union[bool, list]:
     results = ocr_reader.readtext(image_file)
     if debug:
         print(results)
     try:
+        matching_results = []
         for result in results:
             if searched_string.lower() in result[1].lower():
-                middle_of_bounding_box = bounding_box_center_coordinates(result[0], region=region)
-                if move_mouse_to_string:
-                    pyautogui.moveTo(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
-                return middle_of_bounding_box
-        return False
+                matching_results.append(result)
+        middle_of_bounding_box = bounding_box_center_coordinates(matching_results[selected_result][0],
+                                                                         region=region)
+        if move_mouse_to_string:
+            pyautogui.moveTo(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
+        return middle_of_bounding_box
     except TypeError:
+        return False
+    except IndexError:
         return False
 
 
@@ -295,7 +302,6 @@ def set_destination_home() -> None:
     pyautogui.hotkey('alt', 'a', interval=0.1)
 
 
-
 def warp_to_scout_combat_site(region: Tuple) -> None:
     screenshot_of_scanner = jpg_screenshot_of_the_selected_region(region)
     search_for_string_in_region('probe', scanner_region, screenshot_of_scanner, True)
@@ -399,7 +405,24 @@ def check_if_destination_system_was_reached(destination: str, region: Tuple) -> 
     return False
 
 
-def set_and_broadcast_destination(region: Tuple) -> Union[bool, str]:
+def broadcast_destination(region: Tuple) -> bool:
+    if destination is not None:
+        open_or_close_notepad()
+        screenshot = jpg_screenshot_of_the_selected_region(region)
+        search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
+        pyautogui.rightClick()
+        screenshot = jpg_screenshot_of_the_selected_region(region)
+        broadcast = search_for_string_in_region('broadcast', region, screenshot, move_mouse_to_string=True)
+        if broadcast:
+            time.sleep(0.3)
+            pyautogui.click()
+        open_or_close_notepad()
+        return True
+    return False
+
+
+def set_destination(region: Tuple) -> Union[bool, str]:
+    global destination
     select_gates_only_tab()
     move_mouse_away_from_overview()
     time.sleep(0.5)
@@ -407,11 +430,11 @@ def set_and_broadcast_destination(region: Tuple) -> Union[bool, str]:
     time.sleep(4)
     destination = choose_system_to_travel_to()
     screenshot = jpg_screenshot_of_the_selected_region(region)
-    system = search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
-    if system:
-        time.sleep(0.5)
+    destination_system = search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
+    if destination_system:
+        time.sleep(0.3)
         pyautogui.rightClick()
-        time.sleep(0.5)
+        time.sleep(0.3)
     else:
         open_or_close_notepad()
         return False
@@ -419,19 +442,49 @@ def set_and_broadcast_destination(region: Tuple) -> Union[bool, str]:
     destination_confirmation = search_for_string_in_region('destination', region, screenshot, move_mouse_to_string=True)
     if destination_confirmation:
         pyautogui.click()
-        pyautogui.moveTo(system[0], system[1])
-        time.sleep(0.5)
-        # pyautogui.rightClick(x,y) clicks first, then moves to coordinates causing issues
-        pyautogui.rightClick()
-        time.sleep(0.5)
-    screenshot = jpg_screenshot_of_the_selected_region(region)
-    broadcast = search_for_string_in_region('broadcast', region, screenshot, move_mouse_to_string=True)
-    if broadcast:
-        time.sleep(0.5)
-        pyautogui.click()
-    select_fw_tab()
-    open_or_close_notepad()
+        pyautogui.moveTo(destination_system[0], destination_system[1])
     return destination
+
+
+def create_fleet_advert() -> None:
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('advert', scanner_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('create', scanner_region, screenshot, selected_result=1, move_mouse_to_string=True)
+    pyautogui.click()
+    time.sleep(1)
+    screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
+    search_for_string_in_region('submit', mid_to_top_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+
+
+def select_broadcasts() -> None:
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('broad', scanner_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+
+
+def join_existing_fleet() -> None:
+    pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('finder', scanner_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    time.sleep(0.2)
+    for _ in MAX_NUMBER_OF_ATTEMPTS:
+        screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+        if search_for_string_in_region('uncanny', scanner_region, screenshot, move_mouse_to_string=True):
+            pyautogui.click()
+            time.sleep(0.2)
+            screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+            search_for_string_in_region('join', scanner_region, screenshot, move_mouse_to_string=True)
+            pyautogui.click()
+            time.sleep(0.2)
+            screenshot = jpg_screenshot_of_the_selected_region(mid_to_top_region)
+            search_for_string_in_region('yes', mid_to_top_region, screenshot, move_mouse_to_string=True)
+            pyautogui.click()
+        else:
+            time.sleep(3)
 
 
 def form_fleet() -> None:
@@ -453,6 +506,8 @@ def form_fleet() -> None:
                 pyautogui.click()
                 move_mouse_away_from_overview()
                 return
+    create_fleet_advert()
+    select_broadcasts()
 
 
 def select_gates_only_tab() -> None:
@@ -468,13 +523,14 @@ def select_fw_tab() -> None:
 
 
 def travel_to_destination_as_fc() -> None:
+    global destination
     form_fleet()
     time.sleep(0.1)
     if check_if_docked(overview_and_selected_item_region):
         undock()
         time.sleep(20)
     # cannot broadcast destination while docked
-    destination = set_and_broadcast_destination(top_left_region)
+    destination = set_destination(top_left_region)
     if destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not check_if_destination_system_was_reached(destination, scanner_region):
@@ -492,6 +548,19 @@ def travel_home() -> None:
         else:
             break
     dock_at_station()
+
+
+def set_destination_from_broadcast() -> None:
+    for _ in MAX_NUMBER_OF_ATTEMPTS:
+        screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+        if search_for_string_in_region('travel', scanner_region, screenshot, move_mouse_to_string=True):
+            pyautogui.rightClick()
+            time.sleep(0.1)
+            screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+            search_for_string_in_region('dest', scanner_region, screenshot, move_mouse_to_string=True)
+            pyautogui.click()
+        else:
+            time.sleep(3)
 
 
 def broadcast_current_location() -> None:
@@ -587,6 +656,11 @@ def dscan_locations_of_interest(scan_target: str = '') -> None:
             range_to_scan_target = float(new_item_with_period[1])
     
 
+def travel_to_destination_as_fleet_member() -> None:
+    join_existing_fleet()
+    set_destination_from_broadcast()
+
+
     #
     # if debug:
     #     print(results)
@@ -627,7 +701,11 @@ if __name__ == "__main__":
     # main_loop()
     # travel_to_destination_as_fc()
     # time.sleep(15)
-    print(dscan_locations_of_interest())
+    # print(dscan_locations_of_interest())
+    # set_destination_from_broadcast()
+    destination='iesa'
+    broadcast_destination(top_left_region)
+    
 
 
 
