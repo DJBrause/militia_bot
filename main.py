@@ -329,7 +329,7 @@ def jump_through_acceleration_gate(region: Tuple) -> None:
 
 def jump_through_gate_to_destination() -> bool:
     try:
-        next_gate_on_route = pyautogui.locateCenterOnScreen(gate_on_route, confidence=DEFAULT_CONFIDENCE,
+        next_gate_on_route = pyautogui.locateCenterOnScreen(gate_on_route, confidence=pc_specific_confidence,
                                                             grayscale=False, region=overview_and_selected_item_region)
         if next_gate_on_route is not None:
             pyautogui.moveTo(x=next_gate_on_route[0], y=next_gate_on_route[1])
@@ -469,13 +469,13 @@ def select_broadcasts() -> None:
 def join_existing_fleet() -> None:
     pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
-    search_for_string_in_region('finder', scanner_region, screenshot, move_mouse_to_string=True)
+    search_for_string_in_region('ind', scanner_region, screenshot, move_mouse_to_string=True)
     pyautogui.click()
     time.sleep(0.2)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
         if search_for_string_in_region('uncanny', scanner_region, screenshot, move_mouse_to_string=True):
-            pyautogui.click()
+            pyautogui.rightClick()
             time.sleep(0.2)
             screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
             search_for_string_in_region('join', scanner_region, screenshot, move_mouse_to_string=True)
@@ -558,6 +558,7 @@ def travel_home() -> None:
 def travel_to_destination_as_fleet_member() -> None:
     global destination
     join_existing_fleet()
+    select_broadcasts()
     time.sleep(1)
     if check_if_docked(overview_and_selected_item_region):
         undock()
@@ -691,8 +692,6 @@ def dscan_locations_of_interest(scan_target: str = '') -> None:
 
 def broadcast_in_position() -> None:
     pyautogui.press('.')
-
-
 
 
 def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:

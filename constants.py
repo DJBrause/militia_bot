@@ -13,6 +13,7 @@ PROP_MOD = 'f1'
 WEB = 'f2'
 SCRAM = 'f3'
 GUNS = 'f4'
+PC_SPECIFIC_CONFIDENCE=
 
 unlock_target_image = 'images/unlock_icon.PNG'
 cannot_lock_icon = 'images/cannot_lock.PNG'
@@ -31,6 +32,7 @@ mid_to_top_region = ast.literal_eval(os.environ.get('MID_TO_TOP_REGION'))
 targets_region = ast.literal_eval(os.environ.get('TARGETS_REGION'))
 test_region = ast.literal_eval(os.environ.get('TEST_REGION'))
 home_system = os.environ.get('HOME')
+pc_specific_confidence = float(os.environ.get('PC_SPECIFIC_CONFIDENCE'))
 
 amarr_frigates = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer']
 caldari_frigates = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill']
