@@ -620,7 +620,7 @@ def broadcast_current_location() -> None:
 
 def select_fleet_tab() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
-    if search_for_string_in_region('eet', scanner_region, screenshot, move_mouse_to_string=True):
+    if search_for_string_in_region('eet', scanner_region, screenshot, move_mouse_to_string=True, debug=True):
         pyautogui.click()
         return True
     return False
@@ -756,4 +756,5 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    travel_to_destination_as_fleet_member()
+    # travel_to_destination_as_fleet_member()
+    travel_home()
