@@ -13,7 +13,6 @@ PROP_MOD = 'f1'
 WEB = 'f2'
 SCRAM = 'f3'
 GUNS = 'f4'
-PC_SPECIFIC_CONFIDENCE=
 
 unlock_target_image = 'images/unlock_icon.PNG'
 cannot_lock_icon = 'images/cannot_lock.PNG'
