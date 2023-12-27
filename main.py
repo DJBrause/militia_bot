@@ -252,9 +252,9 @@ def switch_tab_to_broadcasts(region: Tuple) -> None:
     time.sleep(0.1)
 
 
-def clear_broadcast_history(region: Tuple) -> None:
-    screenshot = jpg_screenshot_of_the_selected_region(region)
-    search_for_string_in_region('clear', region, screenshot, move_mouse_to_string=True)
+def clear_broadcast_history() -> None:
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('clear', scanner_region, screenshot, move_mouse_to_string=True)
     pyautogui.click()
 
 
@@ -396,7 +396,7 @@ def check_if_docked(region: Tuple) -> bool:
 
 def check_if_destination_system_was_reached(destination: str, region: Tuple) -> bool:
     switch_tab_to_broadcasts(region)
-    clear_broadcast_history(region)
+    clear_broadcast_history()
     broadcast_current_location()
     time.sleep(0.2)
     screenshot = jpg_screenshot_of_the_selected_region(region)
@@ -405,14 +405,14 @@ def check_if_destination_system_was_reached(destination: str, region: Tuple) -> 
     return False
 
 
-def broadcast_destination(region: Tuple) -> bool:
+def broadcast_destination() -> bool:
     if destination is not None:
         open_or_close_notepad()
-        screenshot = jpg_screenshot_of_the_selected_region(region)
-        search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
+        screenshot = jpg_screenshot_of_the_selected_region(top_left_region)
+        search_for_string_in_region(destination, top_left_region, screenshot, move_mouse_to_string=True)
         pyautogui.rightClick()
-        screenshot = jpg_screenshot_of_the_selected_region(region)
-        broadcast = search_for_string_in_region('broadcast', region, screenshot, move_mouse_to_string=True)
+        screenshot = jpg_screenshot_of_the_selected_region(top_left_region)
+        broadcast = search_for_string_in_region('broadcast', top_left_region, screenshot, move_mouse_to_string=True)
         if broadcast:
             time.sleep(0.3)
             pyautogui.click()
@@ -531,6 +531,7 @@ def travel_to_destination_as_fc() -> None:
         time.sleep(20)
     # cannot broadcast destination while docked
     destination = set_destination(top_left_region)
+    wait_for_fleet_members_to_join_and_broadcast_destination()
     if destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not check_if_destination_system_was_reached(destination, scanner_region):
@@ -548,6 +549,25 @@ def travel_home() -> None:
         else:
             break
     dock_at_station()
+
+
+def travel_to_destination_as_fleet_member() -> None:
+    global destination
+    join_existing_fleet()
+    time.sleep(1)
+    broadcast_in_position()
+    time.sleep(2)
+    for _ in MAX_NUMBER_OF_ATTEMPTS:
+        set_destination_from_broadcast()
+        if destination:
+            break
+
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        if not check_if_destination_system_was_reached(destination, scanner_region):
+            travel_to_destination()
+        else:
+            break
+    warp_to_safe_spot()
 
 
 def set_destination_from_broadcast() -> None:
@@ -656,21 +676,21 @@ def dscan_locations_of_interest(scan_target: str = '') -> None:
             range_to_scan_target = float(new_item_with_period[1])
     
 
-def travel_to_destination_as_fleet_member() -> None:
-    join_existing_fleet()
-    set_destination_from_broadcast()
+def broadcast_in_position() -> None:
+    pyautogui.press('.')
 
 
-    #
-    # if debug:
-    #     print(results)
-    # try:
-    #     for result in results:
-    #         if searched_string.lower() in result[1].lower():
-    #             middle_of_bounding_box = bounding_box_center_coordinates(result[0], region=region)
-    #             if move_mouse_to_string:
-    #                 pyautogui.moveTo(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
-    #             return middle_of_bounding_box
+def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
+    broadcast_count = 0
+    for _ in MAX_NUMBER_OF_ATTEMPTS:
+        screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
+        if search_for_string_in_region('position', scanner_region, screenshot):
+            broadcast_destination()
+            clear_broadcast_history()
+            broadcast_count += 1
+        if broadcast_count == FLEET_MEMBERS_COUNT:
+            break
+        time.sleep(2)
 
 
 # Undock, fly to system with scout site, kill rat, attack hostile if it warps in and call help,
@@ -699,13 +719,10 @@ def main_loop() -> None:
 if __name__ == "__main__":
     # region_selector()
     # main_loop()
-    # travel_to_destination_as_fc()
+    travel_to_destination_as_fc()
     # time.sleep(15)
     # print(dscan_locations_of_interest())
     # set_destination_from_broadcast()
-    destination='iesa'
-    broadcast_destination(top_left_region)
-    
-
-
-
+    # destination='iesa'
+    # broadcast_destination(top_left_region)
+    broadcast_in_position()

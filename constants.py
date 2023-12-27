@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+FLEET_MEMBERS_COUNT = 1
 MAX_NUMBER_OF_ATTEMPTS = 20
 IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
@@ -23,12 +24,9 @@ destination_home_station = 'images/destination_home_station.PNG'
 dscan_slider = 'images/dscan_slider.PNG'
 
 scanner_region = ast.literal_eval(os.environ.get('SCANNER_REGION'))
-# screen_center_region = ast.literal_eval(os.environ.get('SCREEN_CENTER_REGION'))
 capacitor_region = ast.literal_eval(os.environ.get('CAPACITOR_REGION'))
 overview_and_selected_item_region = ast.literal_eval(os.environ.get('OVERVIEW_AND_SELECTED_ITEM_REGION'))
 top_left_region = ast.literal_eval(os.environ.get('TOP_LEFT_REGION'))
-# local_window_region = ast.literal_eval(os.environ.get('LOCAL_WINDOW_REGION'))
-# chat_window_region = ast.literal_eval(os.environ.get('CHAT_WINDOW_REGION'))
 mid_to_top_region = ast.literal_eval(os.environ.get('MID_TO_TOP_REGION'))
 targets_region = ast.literal_eval(os.environ.get('TARGETS_REGION'))
 test_region = ast.literal_eval(os.environ.get('TEST_REGION'))
@@ -42,4 +40,4 @@ rookie_ships = ['Ibis', 'Reaper', 'Impairor', 'Velator']
 npc = 'Minmatar Frigate'
 all_frigates = amarr_frigates + caldari_frigates + gallente_frigates + minmatar_frigates + rookie_ships
 avoid = ['Slicer', 'Hookbill']
-minmatar_systems = ['Kourmonen', 'Huola', 'Iesa', 'Uusanen']
+minmatar_systems = ['Kourmonen', 'Huola', 'Anka', 'Sosala']
