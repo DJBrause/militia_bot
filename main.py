@@ -443,6 +443,7 @@ def set_destination(region: Tuple) -> Union[bool, str]:
     if destination_confirmation:
         pyautogui.click()
         pyautogui.moveTo(destination_system[0], destination_system[1])
+    open_or_close_notepad()
     return destination
 
 
@@ -471,7 +472,7 @@ def join_existing_fleet() -> None:
     search_for_string_in_region('finder', scanner_region, screenshot, move_mouse_to_string=True)
     pyautogui.click()
     time.sleep(0.2)
-    for _ in MAX_NUMBER_OF_ATTEMPTS:
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
         if search_for_string_in_region('uncanny', scanner_region, screenshot, move_mouse_to_string=True):
             pyautogui.click()
@@ -531,11 +532,14 @@ def travel_to_destination_as_fc() -> None:
         time.sleep(20)
     # cannot broadcast destination while docked
     destination = set_destination(top_left_region)
+    select_fleet_tab()
+    select_broadcasts()
     wait_for_fleet_members_to_join_and_broadcast_destination()
     if destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not check_if_destination_system_was_reached(destination, scanner_region):
                 travel_to_destination()
+
             else:
                 break
         warp_to_safe_spot()
@@ -555,9 +559,12 @@ def travel_to_destination_as_fleet_member() -> None:
     global destination
     join_existing_fleet()
     time.sleep(1)
+    if check_if_docked(overview_and_selected_item_region):
+        undock()
+        time.sleep(20)
     broadcast_in_position()
     time.sleep(2)
-    for _ in MAX_NUMBER_OF_ATTEMPTS:
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         set_destination_from_broadcast()
         if destination:
             break
@@ -571,7 +578,7 @@ def travel_to_destination_as_fleet_member() -> None:
 
 
 def set_destination_from_broadcast() -> None:
-    for _ in MAX_NUMBER_OF_ATTEMPTS:
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
         if search_for_string_in_region('travel', scanner_region, screenshot, move_mouse_to_string=True):
             pyautogui.rightClick()
@@ -585,6 +592,12 @@ def set_destination_from_broadcast() -> None:
 
 def broadcast_current_location() -> None:
     pyautogui.press(',')
+
+
+def select_fleet_tab() -> None:
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    search_for_string_in_region('eet', scanner_region, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
 
 
 def select_directional_scanner() -> None:
@@ -680,9 +693,11 @@ def broadcast_in_position() -> None:
     pyautogui.press('.')
 
 
+
+
 def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     broadcast_count = 0
-    for _ in MAX_NUMBER_OF_ATTEMPTS:
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
         if search_for_string_in_region('position', scanner_region, screenshot):
             broadcast_destination()
@@ -719,10 +734,12 @@ def main_loop() -> None:
 if __name__ == "__main__":
     # region_selector()
     # main_loop()
-    travel_to_destination_as_fc()
-    # time.sleep(15)
+    # travel_to_destination_as_fc()
+    # time.sleep(35)
+    # travel_home()
+    select_fleet_tab()
     # print(dscan_locations_of_interest())
     # set_destination_from_broadcast()
     # destination='iesa'
     # broadcast_destination(top_left_region)
-    broadcast_in_position()
+    # broadcast_in_position()
