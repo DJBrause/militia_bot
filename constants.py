@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FLEET_MEMBERS_COUNT = 1
-MAX_NUMBER_OF_ATTEMPTS = 20
+MAX_NUMBER_OF_ATTEMPTS = 30
 IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
 MAX_EXPECTED_TRAVEL_DISTANCE = 50
@@ -41,4 +41,4 @@ rookie_ships = ['Ibis', 'Reaper', 'Impairor', 'Velator']
 npc = 'Minmatar Frigate'
 all_frigates = amarr_frigates + caldari_frigates + gallente_frigates + minmatar_frigates + rookie_ships
 avoid = ['Slicer', 'Hookbill']
-minmatar_systems = ['Kourmonen', 'Huola', 'Anka', 'Sosala']
+minmatar_systems = ['Kourmonen', 'Huola'] # , 'Anka', 'Sosala'

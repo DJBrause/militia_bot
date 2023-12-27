@@ -417,6 +417,7 @@ def broadcast_destination() -> bool:
             time.sleep(0.3)
             pyautogui.click()
         open_or_close_notepad()
+        print(f'Destination broadcast to {destination} sent')
         return True
     return False
 
@@ -448,6 +449,7 @@ def set_destination(region: Tuple) -> Union[bool, str]:
 
 
 def create_fleet_advert() -> None:
+    select_fleet_tab()
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
     search_for_string_in_region('advert', scanner_region, screenshot, move_mouse_to_string=True)
     pyautogui.click()
@@ -495,6 +497,8 @@ def form_fleet() -> None:
     form_fleet_button = search_for_string_in_region('form fleet', scanner_region, screenshot, move_mouse_to_string=True)
     if form_fleet_button:
         pyautogui.click()
+        move_mouse_away_from_overview()
+        return
     else:
         results = ocr_reader.readtext(screenshot)
         for result in results:
@@ -517,10 +521,12 @@ def select_gates_only_tab() -> None:
     pyautogui.click()
 
 
-def select_fw_tab() -> None:
+def select_fw_tab() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
-    search_for_string_in_region('fw', overview_and_selected_item_region, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
+    if search_for_string_in_region('fw', overview_and_selected_item_region, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        return True
+    return False
 
 
 def travel_to_destination_as_fc() -> None:
@@ -697,48 +703,21 @@ def broadcast_in_position() -> None:
 def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     broadcast_count = 0
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
-        if search_for_string_in_region('position', scanner_region, screenshot):
+        screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+        if search_for_string_in_region('position', scanner_region, screenshot, debug=True):
             broadcast_destination()
             clear_broadcast_history()
             broadcast_count += 1
         if broadcast_count == FLEET_MEMBERS_COUNT:
             break
-        time.sleep(2)
+        time.sleep(3)
 
 
-# Undock, fly to system with scout site, kill rat, attack hostile if it warps in and call help,
-# check if the ship is targeted still or not, if the plex finishes, fly back to station or safe spot.
 def main_loop() -> None:
-    # undock()
-    # warp_to_scout_combat_site(probe_scanner_region)
-    # time.sleep(2)
-    # for _ in range(160):
-    #     if check_if_in_warp(bottom_of_the_screen_region):
-    #         pass
-    #     else:
-    #         time.sleep(3)
-    #         break
-    # jump_through_acceleration_gate(overview_and_selected_item_region)
-    # time.sleep(2)
-    # for _ in range(160):
-    #     if check_if_in_warp(bottom_of_the_screen_region):
-    #         pass
-    #     else:
-    #         time.sleep(3)
-    #         break
-    check_for_hostiles_and_engage(overview_and_selected_item_region)
+    # check_for_hostiles_and_engage(overview_and_selected_item_region)
+    # travel_to_destination_as_fc()
+    travel_home()
 
 
 if __name__ == "__main__":
-    # region_selector()
-    # main_loop()
-    # travel_to_destination_as_fc()
-    # time.sleep(35)
-    # travel_home()
-    select_fleet_tab()
-    # print(dscan_locations_of_interest())
-    # set_destination_from_broadcast()
-    # destination='iesa'
-    # broadcast_destination(top_left_region)
-    # broadcast_in_position()
+    main_loop()
