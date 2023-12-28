@@ -4,6 +4,8 @@ import cv2
 import pyautogui
 import io
 import time
+
+import pyscreeze
 from easyocr import Reader
 import keyboard
 from PIL import Image
@@ -225,7 +227,7 @@ def manage_engagement() -> None:
 
 
 def move_mouse_away_from_overview() -> None:
-    pyautogui.moveTo(x=100, y=10)
+    pyautogui.moveTo(x=80, y=30)
 
 
 def warp_to_safe_spot() -> None:
@@ -288,7 +290,7 @@ def orbit_target() -> None:
 
 def check_if_in_warp() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(capacitor_region)
-    if search_for_string_in_region('wa', capacitor_region, screenshot, debug=True):
+    if search_for_string_in_region('wa', capacitor_region, screenshot):
         return True
     return False
 
@@ -616,9 +618,9 @@ def set_destination_from_broadcast() -> bool:
                 search_for_string_in_region('dest', scanner_region, screenshot, move_mouse_to_string=True)
                 pyautogui.click()
                 return True
-        else:
             time.sleep(2)
-            return False
+    return False
+
 
 def broadcast_current_location() -> None:
     pyautogui.press(',')
@@ -626,16 +628,18 @@ def broadcast_current_location() -> None:
 
 def select_fleet_tab() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
-    if search_for_string_in_region('eet', scanner_region, screenshot, move_mouse_to_string=True, debug=True):
+    if search_for_string_in_region('eet', scanner_region, screenshot, move_mouse_to_string=True):
         pyautogui.click()
         return True
     return False
 
 
-def select_directional_scanner() -> None:
+def select_directional_scanner() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
-    search_for_string_in_region('direct', scanner_region, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
+    if search_for_string_in_region('direct', scanner_region, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        return True
+    return False
 
 
 def set_dscan_range_to_minimum() -> None:
@@ -655,21 +659,25 @@ def set_dscan_range_to_minimum() -> None:
     move_mouse_away_from_overview()
 
 
-def set_dscan_range_to_maximum() -> None:
+def set_dscan_range_to_maximum() -> bool:
     range_slider = None
     screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(dscan_slider, confidence=dscan_confidence, region=scanner_region)
-    for slider in sliders:
-        if range_slider is None:
-            range_slider = slider
-        if slider[0] < range_slider[0]:
-            range_slider = slider
-    x = range_slider[0] + (range_slider[2] / 2)
-    y = range_slider[1] + (range_slider[3] / 2)
-    pyautogui.moveTo(x=x, y=y)
-    pyautogui.click()
-    pyautogui.dragTo(screen_width * 0.95, y, 0.5, button='left')
-    move_mouse_away_from_overview()
+    try:
+        sliders = pyautogui.locateAllOnScreen(dscan_slider, confidence=dscan_confidence, region=scanner_region)
+        for slider in sliders:
+            if range_slider is None:
+                range_slider = slider
+            if slider[0] < range_slider[0]:
+                range_slider = slider
+        x = range_slider[0] + (range_slider[2] / 2)
+        y = range_slider[1] + (range_slider[3] / 2)
+        pyautogui.moveTo(x=x, y=y)
+        pyautogui.click()
+        pyautogui.dragTo(screen_width * 0.95, y, 0.5, button='left')
+        move_mouse_away_from_overview()
+        return True
+    except pyscreeze.ImageNotFoundException:
+        return False
 
 
 def set_dscan_angle_to_five_degree() -> None:
@@ -706,20 +714,64 @@ def set_dscan_angle_to_three_sixty_degree() -> None:
     move_mouse_away_from_overview()
 
 
-def dscan_locations_of_interest(scan_target: str = '') -> None:
-    range_to_scan_target = None
+def check_dscan_result() -> bool:
+    screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
+    results = ocr_reader.readtext(screenshot)
+    frigate_on_scan = [(f, r) for f in all_frigates for r in results if f == r[1]]
+    if len(frigate_on_scan) > 0:
+        print(frigate_on_scan)
+        return True
+    print(f"No target found in {destination}")
+    return False
+
+
+def dscan_location_of_interest_for_target(scan_target: str) -> None:
+    select_fw_tab()
+    select_directional_scanner()
+    set_dscan_range_to_maximum()
+    set_dscan_angle_to_five_degree()
     screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
     results = ocr_reader.readtext(screenshot)
+    searched_term_found = [result for result in results if scan_target.lower() in result[1].lower()]
+    filtered_searched_term_found = searched_term_found
+    for i in searched_term_found:
+        for y in searched_term_found:
+            if i != y and i[0][2][1] == y[0][2][1]:
+                filtered_searched_term_found.remove(i)
 
-    searched_term = next((r for r in results if str(r[1]).lower() == scan_target), None)
-    matching_items = [r for r in results if r[0][2][1] == searched_term[0][2][1]]
-    for item in matching_items:
-        new_item_with_period = item.replace(',', '.')
-        if 'AU' in new_item_with_period[1]:
-            range_to_scan_target = float(new_item_with_period[1][:-3])
-        else:
-            range_to_scan_target = float(new_item_with_period[1])
-    
+    for item in filtered_searched_term_found:
+        pyautogui.moveTo(bounding_box_center_coordinates(item[0], overview_and_selected_item_region))
+        pyautogui.keyDown('v')
+        pyautogui.click()
+        pyautogui.keyUp('v')
+        check_dscan_result()
+        time.sleep(5)
+    # distance_to_target = [result for result in results if 'au' in str(result[1]).lower()]
+    # distance_target_pair = []
+    # for distance in distance_to_target:
+    #     for term in filtered_searched_term_found:
+    #         if term[0][2][1] == distance[0][2][1]:
+    #             distance_target_pair.append([distance[1], term[1]])
+    #
+    # print(distance_target_pair)
+    # searched_term = next((result for result in results if scan_target in str(result[1]).lower()), None)
+    # matching_items = [result for result in results if result[0][2][1] == searched_term[0][2][1]]
+    #
+    # for item in matching_items:
+    #     new_item_with_period = item[1].replace(',', '.')
+    #     try:
+    #         if 'AU' in new_item_with_period:
+    #             range_to_scan_target = float(new_item_with_period[:-3])
+    #         else:
+    #             range_to_scan_target = float(new_item_with_period)
+    #     except ValueError:
+    #         range_to_scan_target = 0
+    #     if range_to_scan_target <= MAX_SCAN_RANGE:
+    #         pyautogui.moveTo(bounding_box_center_coordinates(item[0], overview_and_selected_item_region))
+    #         pyautogui.keyDown('v')
+    #         pyautogui.click()
+    #         pyautogui.keyUp('v')
+
 
 def broadcast_in_position() -> None:
     pyautogui.press('.')
@@ -729,7 +781,7 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     broadcast_count = 0
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
-        if search_for_string_in_region('position', scanner_region, screenshot, debug=True):
+        if search_for_string_in_region('position', scanner_region, screenshot):
             broadcast_destination()
             clear_broadcast_history()
             broadcast_count += 1
@@ -739,12 +791,20 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
 
 
 def main_loop() -> None:
+    global destination
     # check_for_hostiles_and_engage(overview_and_selected_item_region)
     # travel_to_destination_as_fc()
+    # for system in minmatar_systems:
+    #     set_destination(top_left_region)
+    #     destination = system
+    #     travel_to_destination()
+    #     time.sleep(3)
+    #     warp_to_safe_spot()
+    #     time.sleep(15)
+    #     dscan_location_of_interest_for_target('scout')
     travel_home()
 
 
 if __name__ == "__main__":
     # travel_to_destination_as_fleet_member()
-    travel_home()
-
+    main_loop()
