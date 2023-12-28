@@ -384,7 +384,7 @@ def open_or_close_notepad() -> None:
 
 
 def choose_system_to_travel_to() -> str:
-    random_system = random.choice(minmatar_systems)
+    random_system = random.choice(amarr_systems)
     return random_system
 
 
@@ -464,7 +464,7 @@ def create_fleet_advert() -> None:
     pyautogui.click()
 
 
-def select_broadcasts() -> None:
+def select_broadcasts() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(scanner_region)
     if search_for_string_in_region('cast', scanner_region, screenshot, move_mouse_to_string=True):
         pyautogui.click()
