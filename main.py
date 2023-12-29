@@ -53,7 +53,7 @@ def region_selector():
 
 
 def search_for_string_in_region(searched_string: str, region: Tuple, image_file: Image,
-                                move_mouse_to_string: bool = False, selected_result: int = 0, debug: bool = False)\
+                                move_mouse_to_string: bool = False, selected_result: int = 0, debug: bool = False) \
         -> Union[bool, list]:
     results = ocr_reader.readtext(image_file)
     if debug:
@@ -64,7 +64,7 @@ def search_for_string_in_region(searched_string: str, region: Tuple, image_file:
             if searched_string.lower() in result[1].lower():
                 matching_results.append(result)
         middle_of_bounding_box = bounding_box_center_coordinates(matching_results[selected_result][0],
-                                                                         region=region)
+                                                                 region=region)
         if move_mouse_to_string:
             pyautogui.moveTo(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
         return middle_of_bounding_box
@@ -307,9 +307,7 @@ def set_destination_home() -> None:
 
 
 def warp_to_scout_combat_site(region: Tuple) -> None:
-    screenshot_of_scanner = jpg_screenshot_of_the_selected_region(region)
-    search_for_string_in_region('probe', scanner_region, screenshot_of_scanner, True)
-    pyautogui.click()
+    select_probe_scanner()
     screenshot_of_scanner = jpg_screenshot_of_the_selected_region(region)
     search_for_string_in_region('scout', scanner_region, screenshot_of_scanner, True)
     pyautogui.rightClick()
@@ -385,8 +383,8 @@ def open_or_close_notepad() -> None:
     pyautogui.hotkey('ctrl', 'n', interval=0.1)
 
 
-def choose_system_to_travel_to() -> str:
-    random_system = random.choice(amarr_systems)
+def choose_system_to_travel_to(systems: list) -> str:
+    random_system = random.choice(systems)
     return random_system
 
 
@@ -426,14 +424,16 @@ def broadcast_destination() -> bool:
     return False
 
 
-def set_destination(region: Tuple) -> Union[bool, str]:
+def set_destination(region: Tuple, systems: list) -> Union[bool, str]:
     global destination
+    if destination:
+        systems.remove(destination)
     select_gates_only_tab()
     move_mouse_away_from_overview()
     time.sleep(0.5)
     open_or_close_notepad()
     time.sleep(4)
-    destination = choose_system_to_travel_to()
+    destination = choose_system_to_travel_to(systems)
     screenshot = jpg_screenshot_of_the_selected_region(region)
     destination_system = search_for_string_in_region(destination, region, screenshot, move_mouse_to_string=True)
     if destination_system:
@@ -549,7 +549,7 @@ def travel_to_destination_as_fc() -> None:
         undock()
         time.sleep(20)
     # cannot broadcast destination while docked
-    destination = set_destination(top_left_region)
+    destination = set_destination(top_left_region, amarr_systems)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if select_fleet_tab():
             break
@@ -639,7 +639,14 @@ def select_directional_scanner() -> bool:
     if search_for_string_in_region('direct', scanner_region, screenshot, move_mouse_to_string=True):
         pyautogui.click()
         return True
-    return False
+
+    pyautogui.hotkey('alt', 'd', interval=0.1)
+    if not search_for_string_in_region('direct', scanner_region, screenshot, move_mouse_to_string=True):
+        return False
+
+
+def select_probe_scanner() -> None:
+    pyautogui.hotkey('alt', 'p', interval=0.1)
 
 
 def set_dscan_range_to_minimum() -> None:
@@ -651,11 +658,11 @@ def set_dscan_range_to_minimum() -> None:
             range_slider = slider
         if slider[0] < range_slider[0]:
             range_slider = slider
-    x = range_slider[0] + (range_slider[2]/2)
-    y = range_slider[1] + (range_slider[3]/2)
+    x = range_slider[0] + (range_slider[2] / 2)
+    y = range_slider[1] + (range_slider[3] / 2)
     pyautogui.moveTo(x=x, y=y)
     pyautogui.click()
-    pyautogui.dragTo(screen_width*0.80, y, 0.5, button='left')
+    pyautogui.dragTo(screen_width * 0.80, y, 0.5, button='left')
     move_mouse_away_from_overview()
 
 
@@ -725,7 +732,18 @@ def check_dscan_result() -> bool:
     return False
 
 
-def dscan_location_of_interest_for_target(scan_target: str) -> None:
+def scan_target_within_range(target: list) -> None:
+    pyautogui.moveTo(bounding_box_center_coordinates(target[1][0], overview_and_selected_item_region))
+    pyautogui.keyDown('v')
+    pyautogui.click()
+    pyautogui.keyUp('v')
+    check_dscan_result()
+
+
+def get_distance_for_scan_target(scan_target: str) -> dict:
+    targets_within_and_outside_scan_range = {'targets_within_range': None, 'targets_outside_scan_range': None}
+    targets_within_scan_range = []
+    targets_outside_scan_range = []
     select_fw_tab()
     select_directional_scanner()
     set_dscan_range_to_maximum()
@@ -733,48 +751,51 @@ def dscan_location_of_interest_for_target(scan_target: str) -> None:
     screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
     results = ocr_reader.readtext(screenshot)
     searched_term_found = [result for result in results if scan_target.lower() in result[1].lower()]
+
+    # filtering out items with the same string that are in the same row
     filtered_searched_term_found = searched_term_found
+
     for i in searched_term_found:
         for y in searched_term_found:
-            if i != y and i[0][2][1] == y[0][2][1]:
+            y_value = y[0][2][1]
+            if i != y and y_value-5 <= i[0][2][1] <= y_value+5:
                 filtered_searched_term_found.remove(i)
 
-    for item in filtered_searched_term_found:
-        pyautogui.moveTo(bounding_box_center_coordinates(item[0], overview_and_selected_item_region))
-        pyautogui.keyDown('v')
-        pyautogui.click()
-        pyautogui.keyUp('v')
-        check_dscan_result()
-        time.sleep(5)
-    # distance_to_target = [result for result in results if 'au' in str(result[1]).lower()]
-    # distance_target_pair = []
-    # for distance in distance_to_target:
-    #     for term in filtered_searched_term_found:
-    #         if term[0][2][1] == distance[0][2][1]:
-    #             distance_target_pair.append([distance[1], term[1]])
-    #
-    # print(distance_target_pair)
-    # searched_term = next((result for result in results if scan_target in str(result[1]).lower()), None)
-    # matching_items = [result for result in results if result[0][2][1] == searched_term[0][2][1]]
-    #
-    # for item in matching_items:
-    #     new_item_with_period = item[1].replace(',', '.')
-    #     try:
-    #         if 'AU' in new_item_with_period:
-    #             range_to_scan_target = float(new_item_with_period[:-3])
-    #         else:
-    #             range_to_scan_target = float(new_item_with_period)
-    #     except ValueError:
-    #         range_to_scan_target = 0
-    #     if range_to_scan_target <= MAX_SCAN_RANGE:
-    #         pyautogui.moveTo(bounding_box_center_coordinates(item[0], overview_and_selected_item_region))
-    #         pyautogui.keyDown('v')
-    #         pyautogui.click()
-    #         pyautogui.keyUp('v')
+    distance_in_au = [result for result in results if result[1][0].lower().isdigit()]
+    distance_and_site_pairs = [(distance, site) for distance in distance_in_au for site in filtered_searched_term_found
+                               if site[0][2][1]-5 <= distance[0][2][1] <= site[0][2][1]+5]
+
+    for pair in distance_and_site_pairs:
+        distance_str_to_float = pair[0][1].replace(',', '.')
+        if 'AU' in distance_str_to_float:
+            distance_str_to_float = float(distance_str_to_float[:-3])
+        else:
+            distance_str_to_float = float(distance_str_to_float)
+        try:
+            if distance_str_to_float <= 14.3:
+                targets_within_scan_range.append(pair)
+            else:
+                targets_outside_scan_range.append(pair)
+        except ValueError:
+            targets_outside_scan_range.append(pair)
+    targets_within_and_outside_scan_range['targets_within_range'] = targets_within_scan_range
+    targets_within_and_outside_scan_range['targets_outside_scan_range'] = targets_outside_scan_range
+    return targets_within_and_outside_scan_range
 
 
 def broadcast_in_position() -> None:
     pyautogui.press('.')
+
+
+def make_a_short_range_three_sixty_scan() -> None:
+    select_directional_scanner()
+    set_dscan_range_to_minimum()
+    set_dscan_angle_to_three_sixty_degree()
+    time.sleep(4)
+    pyautogui.keyDown('v')
+    time.sleep(0.1)
+    pyautogui.keyUp('v')
+    check_dscan_result()
 
 
 def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
@@ -790,21 +811,47 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
         time.sleep(3)
 
 
-def main_loop() -> None:
+def warp_within_70_km(target: list) -> bool:
+    pyautogui.moveTo(target[0], target[1])
+    pyautogui.rightClick()
+    screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
+    if search_for_string_in_region('ithin (', overview_and_selected_item_region, screenshot,
+                                   move_mouse_to_string=True):
+        screenshot = jpg_screenshot_of_the_selected_region(overview_and_selected_item_region)
+        search_for_string_in_region('ithin 70', overview_and_selected_item_region, screenshot,
+                                    move_mouse_to_string=True)
+        pyautogui.click()
+        return True
+    return False
+
+
+def scan_sites_in_system(site: str) -> None:
     global destination
-    # check_for_hostiles_and_engage(overview_and_selected_item_region)
-    # travel_to_destination_as_fc()
-    # for system in minmatar_systems:
-    #     set_destination(top_left_region)
-    #     destination = system
-    #     travel_to_destination()
-    #     time.sleep(3)
-    #     warp_to_safe_spot()
-    #     time.sleep(15)
-    #     dscan_location_of_interest_for_target('scout')
-    travel_home()
+
+    targets_within_and_outside_scan_range = get_distance_for_scan_target(site)
+
+    for target_within_range in targets_within_and_outside_scan_range['targets_within_range']:
+        scan_target_within_range(target_within_range)
+        time.sleep(5)
+
+    for target_outside_range in targets_within_and_outside_scan_range['targets_outside_scan_range']:
+        warp_within_70_km(bounding_box_center_coordinates(target_outside_range[1][0], overview_and_selected_item_region))
+        time.sleep(3)
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if not check_if_in_warp():
+                break
+        make_a_short_range_three_sixty_scan()
+
+    time.sleep(2)
+    warp_to_safe_spot()
+
+
+def main_loop() -> None:
+
+    beep_x_times(1)
+    scan_sites_in_system('medium')
+    notification_beep()
 
 
 if __name__ == "__main__":
-    # travel_to_destination_as_fleet_member()
     main_loop()
