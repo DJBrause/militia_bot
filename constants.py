@@ -14,6 +14,7 @@ WEB = 'f2'
 SCRAM = 'f3'
 GUNS = 'f4'
 MAX_SCAN_RANGE = 14.3
+MAX_PIXEL_SPREAD = 5
 
 unlock_target_image = 'images/unlock_icon.PNG'
 cannot_lock_icon = 'images/cannot_lock.PNG'

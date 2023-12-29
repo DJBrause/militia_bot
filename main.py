@@ -1,6 +1,5 @@
 from typing import Tuple, List, Union
 
-import cv2
 import pyautogui
 import io
 import time
@@ -15,12 +14,10 @@ import random
 from constants import *
 
 # todo killing rat at the plex
-# todo scanning for hostiles
 # todo GTFO if conditions are unfavorable
 # todo if FC - sending broadcasts
 # todo if wingman, then warping to FC and aggroing broadcast target
 # todo create a listener on FC side that will detect 'in position' broadcast to broadcast destination in return
-# todo report local system needs further work - make it broadcast location
 # todo create status checklist to make sure all steps were completed successfully
 # todo create confusion detection to check if bot is stuck
 
@@ -396,13 +393,13 @@ def check_if_docked(region: Tuple) -> bool:
     return False
 
 
-def check_if_destination_system_was_reached(destination: str, region: Tuple) -> bool:
+def check_if_destination_system_was_reached(destination_system: str, region: Tuple) -> bool:
     switch_tab_to_broadcasts(region)
     clear_broadcast_history()
     broadcast_current_location()
     time.sleep(0.2)
     screenshot = jpg_screenshot_of_the_selected_region(region)
-    if search_for_string_in_region(destination, region, screenshot):
+    if search_for_string_in_region(destination_system, region, screenshot):
         return True
     return False
 
@@ -741,7 +738,7 @@ def scan_target_within_range(target: list) -> None:
 
 
 def get_distance_for_scan_target(scan_target: str) -> dict:
-    targets_within_and_outside_scan_range = {'targets_within_range': None, 'targets_outside_scan_range': None}
+    targets_within_and_outside_scan_range = {'targets_within_scan_range': [], 'targets_outside_scan_range': []}
     targets_within_scan_range = []
     targets_outside_scan_range = []
     select_fw_tab()
@@ -758,12 +755,12 @@ def get_distance_for_scan_target(scan_target: str) -> dict:
     for i in searched_term_found:
         for y in searched_term_found:
             y_value = y[0][2][1]
-            if i != y and y_value-5 <= i[0][2][1] <= y_value+5:
+            if i != y and y_value-MAX_PIXEL_SPREAD <= i[0][2][1] <= y_value+MAX_PIXEL_SPREAD:
                 filtered_searched_term_found.remove(i)
 
     distance_in_au = [result for result in results if result[1][0].lower().isdigit()]
     distance_and_site_pairs = [(distance, site) for distance in distance_in_au for site in filtered_searched_term_found
-                               if site[0][2][1]-5 <= distance[0][2][1] <= site[0][2][1]+5]
+                               if site[0][2][1]-MAX_PIXEL_SPREAD <= distance[0][2][1] <= site[0][2][1]+MAX_PIXEL_SPREAD]
 
     for pair in distance_and_site_pairs:
         distance_str_to_float = pair[0][1].replace(',', '.')
@@ -778,7 +775,7 @@ def get_distance_for_scan_target(scan_target: str) -> dict:
                 targets_outside_scan_range.append(pair)
         except ValueError:
             targets_outside_scan_range.append(pair)
-    targets_within_and_outside_scan_range['targets_within_range'] = targets_within_scan_range
+    targets_within_and_outside_scan_range['targets_within_scan_range'] = targets_within_scan_range
     targets_within_and_outside_scan_range['targets_outside_scan_range'] = targets_outside_scan_range
     return targets_within_and_outside_scan_range
 
@@ -830,7 +827,7 @@ def scan_sites_in_system(site: str) -> None:
 
     targets_within_and_outside_scan_range = get_distance_for_scan_target(site)
 
-    for target_within_range in targets_within_and_outside_scan_range['targets_within_range']:
+    for target_within_range in targets_within_and_outside_scan_range['targets_within_scan_range']:
         scan_target_within_range(target_within_range)
         time.sleep(5)
 
@@ -841,15 +838,14 @@ def scan_sites_in_system(site: str) -> None:
             if not check_if_in_warp():
                 break
         make_a_short_range_three_sixty_scan()
-
-    time.sleep(2)
-    warp_to_safe_spot()
+        time.sleep(2)
+        warp_to_safe_spot()
 
 
 def main_loop() -> None:
 
     beep_x_times(1)
-    scan_sites_in_system('medium')
+    scan_sites_in_system('scout')
     notification_beep()
 
 
