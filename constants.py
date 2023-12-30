@@ -28,7 +28,8 @@ DSCAN_SLIDER = 'images/dscan_slider.PNG'
 
 SCANNER_REGION = ast.literal_eval(os.environ.get('SCANNER_REGION'))
 CAPACITOR_REGION = ast.literal_eval(os.environ.get('CAPACITOR_REGION'))
-OVERVIEW_AND_SELECTED_ITEM_REGION = ast.literal_eval(os.environ.get('OVERVIEW_AND_SELECTED_ITEM_REGION'))
+SELECTED_ITEM_REGION = ast.literal_eval(os.environ.get('SELECTED_ITEM_REGION'))
+OVERVIEW_REGION = ast.literal_eval(os.environ.get('OVERVIEW_REGION'))
 TOP_LEFT_REGION = ast.literal_eval(os.environ.get('TOP_LEFT_REGION'))
 MID_TO_TOP_REGION = ast.literal_eval(os.environ.get('MID_TO_TOP_REGION'))
 TARGETS_REGION = ast.literal_eval(os.environ.get('TARGETS_REGION'))

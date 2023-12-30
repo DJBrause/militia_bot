@@ -147,7 +147,7 @@ def check_if_target_is_outside_range() -> bool:
 def check_if_within_targeting_range() -> bool:
     try:
         target_is_lockable = pyautogui.locateCenterOnScreen(LOCK_TARGET_ICON, confidence=0.99,
-                                                            region=OVERVIEW_AND_SELECTED_ITEM_REGION)
+                                                            region=SELECTED_ITEM_REGION)
         if target_is_lockable is not None:
             return True
     except pyautogui.ImageNotFoundException:
@@ -179,7 +179,7 @@ def target_and_engage_a_hostile_ship(region: Tuple, overview_content: list, ship
             while True:
                 target_lock()
                 time.sleep(0.2)
-                if check_if_target_is_locked(OVERVIEW_AND_SELECTED_ITEM_REGION):
+                if check_if_target_is_locked(SELECTED_ITEM_REGION):
                     for _ in range(3):
                         orbit_target()
                         time.sleep(0.1)
@@ -219,7 +219,7 @@ def check_if_scrambler_is_operating() -> bool:
 
 
 def manage_engagement() -> None:
-    if not check_if_target_is_locked(OVERVIEW_AND_SELECTED_ITEM_REGION):
+    if not check_if_target_is_locked(SELECTED_ITEM_REGION):
         pass
 
 
@@ -315,10 +315,11 @@ def warp_to_scout_combat_site(region: Tuple) -> None:
 
 
 def jump_through_acceleration_gate(region: Tuple) -> None:
-    overview_and_selected_item_screenshot = jpg_screenshot_of_the_selected_region(region)
-    search_for_string_in_region('acceleration', OVERVIEW_AND_SELECTED_ITEM_REGION,
-                                overview_and_selected_item_screenshot,
-                                True)
+    screenshot = jpg_screenshot_of_the_selected_region(region)
+    search_for_string_in_region('acceleration',
+                                OVERVIEW_REGION,
+                                screenshot,
+                                move_mouse_to_string=True)
     pyautogui.click()
     time.sleep(0.1)
     for _ in range(3):
@@ -328,8 +329,10 @@ def jump_through_acceleration_gate(region: Tuple) -> None:
 
 def jump_through_gate_to_destination() -> bool:
     try:
-        next_gate_on_route = pyautogui.locateCenterOnScreen(GATE_ON_ROUTE, confidence=PC_SPECIFIC_CONFIDENCE,
-                                                            grayscale=False, region=OVERVIEW_AND_SELECTED_ITEM_REGION)
+        next_gate_on_route = pyautogui.locateCenterOnScreen(GATE_ON_ROUTE,
+                                                            confidence=PC_SPECIFIC_CONFIDENCE,
+                                                            grayscale=False,
+                                                            region=OVERVIEW_REGION)
         if next_gate_on_route is not None:
             pyautogui.moveTo(x=next_gate_on_route[0], y=next_gate_on_route[1])
             pyautogui.keyDown('d')
@@ -365,7 +368,7 @@ def dock_at_station() -> None:
         try:
             docking_station = pyautogui.locateCenterOnScreen(station, confidence=DEFAULT_CONFIDENCE,
                                                              grayscale=False,
-                                                             region=OVERVIEW_AND_SELECTED_ITEM_REGION)
+                                                             region=OVERVIEW_REGION)
             if docking_station is not None:
                 pyautogui.moveTo(x=docking_station[0], y=docking_station[1])
                 pyautogui.keyDown('d')
@@ -525,14 +528,14 @@ def form_fleet() -> None:
 
 
 def select_gates_only_tab() -> None:
-    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_AND_SELECTED_ITEM_REGION)
-    search_for_string_in_region('gates', OVERVIEW_AND_SELECTED_ITEM_REGION, screenshot, move_mouse_to_string=True)
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    search_for_string_in_region('gates', OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
 
 
 def select_fw_tab() -> bool:
-    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_AND_SELECTED_ITEM_REGION)
-    if search_for_string_in_region('fw', OVERVIEW_AND_SELECTED_ITEM_REGION, screenshot, move_mouse_to_string=True):
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if search_for_string_in_region('fw', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
         pyautogui.click()
         return True
     return False
@@ -542,7 +545,7 @@ def travel_to_destination_as_fc() -> None:
     global destination
     form_fleet()
     time.sleep(0.1)
-    if check_if_docked(OVERVIEW_AND_SELECTED_ITEM_REGION):
+    if check_if_docked(SELECTED_ITEM_REGION):
         undock()
         time.sleep(20)
     # cannot broadcast destination while docked
@@ -583,7 +586,7 @@ def travel_to_destination_as_fleet_member() -> None:
         else:
             print('cannot locate broadcasts')
             time.sleep(2)
-    if check_if_docked(OVERVIEW_AND_SELECTED_ITEM_REGION):
+    if check_if_docked(SELECTED_ITEM_REGION):
         undock()
         time.sleep(20)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
@@ -730,7 +733,7 @@ def check_dscan_result() -> bool:
 
 
 def scan_target_within_range(target: list) -> None:
-    pyautogui.moveTo(bounding_box_center_coordinates(target[1][0], OVERVIEW_AND_SELECTED_ITEM_REGION))
+    pyautogui.moveTo(bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION))
     pyautogui.keyDown('v')
     pyautogui.click()
     pyautogui.keyUp('v')
@@ -745,7 +748,7 @@ def get_distance_for_scan_target(scan_target: str) -> dict:
     select_directional_scanner()
     set_dscan_range_to_maximum()
     set_dscan_angle_to_five_degree()
-    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_AND_SELECTED_ITEM_REGION)
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     results = ocr_reader.readtext(screenshot)
     searched_term_found = [result for result in results if scan_target.lower() in result[1].lower()]
 
@@ -811,11 +814,11 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
 def warp_within_70_km(target: list) -> bool:
     pyautogui.moveTo(target[0], target[1])
     pyautogui.rightClick()
-    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_AND_SELECTED_ITEM_REGION)
-    if search_for_string_in_region('ithin (', OVERVIEW_AND_SELECTED_ITEM_REGION, screenshot,
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if search_for_string_in_region('ithin (', OVERVIEW_REGION, screenshot,
                                    move_mouse_to_string=True):
-        screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_AND_SELECTED_ITEM_REGION)
-        search_for_string_in_region('ithin 70', OVERVIEW_AND_SELECTED_ITEM_REGION, screenshot,
+        screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+        search_for_string_in_region('ithin 70', OVERVIEW_REGION, screenshot,
                                     move_mouse_to_string=True)
         pyautogui.click()
         return True
@@ -832,7 +835,7 @@ def scan_sites_in_system(site: str) -> None:
         time.sleep(5)
 
     for target_outside_range in targets_within_and_outside_scan_range['targets_outside_scan_range']:
-        warp_within_70_km(bounding_box_center_coordinates(target_outside_range[1][0], OVERVIEW_AND_SELECTED_ITEM_REGION))
+        warp_within_70_km(bounding_box_center_coordinates(target_outside_range[1][0], OVERVIEW_REGION))
         time.sleep(3)
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not check_if_in_warp():
@@ -845,8 +848,10 @@ def scan_sites_in_system(site: str) -> None:
 def main_loop() -> None:
 
     beep_x_times(1)
-    scan_sites_in_system('scout')
+    # jump_through_acceleration_gate(OVERVIEW_REGION)
+    region_selector()
     notification_beep()
+
 
 
 if __name__ == "__main__":
