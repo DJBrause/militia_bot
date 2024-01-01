@@ -24,7 +24,7 @@ ocr_reader = Reader(['en'])
 dscan_confidence = 0.65
 destination = ''
 unvisited_systems = []
-
+gtfo_flag = False
 
 def region_selector():
     beep_x_times(1)
@@ -157,43 +157,34 @@ def turn_recording_on_or_off() -> None:
     pyautogui.hotkey('alt', 'f9', interval=0.1)
 
 
-def target_and_engage_a_hostile_ship(region: Tuple, overview_content: list, ship: str) -> None:
-    # turn_recording_on_or_off()
-    for item in overview_content:
-        if ship in item[1]:
-            coordinates = bounding_box_center_coordinates(bounding_box=item[0], region=region)
-            pyautogui.moveTo(coordinates)
-
-            # Use AB/MWD
-            pyautogui.press(PROP_MOD)
-
-            for _ in range(3):
-                approach()
-            while True:
-                target_lock()
-                time.sleep(0.2)
-                if check_if_target_is_locked(SELECTED_ITEM_REGION):
-                    for _ in range(3):
-                        orbit_target()
-                        time.sleep(0.1)
-                    break
-
-            # Fire guns and try to tackle
-            pyautogui.press(GUNS)
-
-            while True:
-                if not check_if_scrambler_is_operating():
-                    pyautogui.press('f2')
-                else:
-                    break
-
-            notification_beep()
+def target_lock_and_engage_a_hostile_ship(hostiles: list) -> bool:
+    broadcast_target(hostiles[0][0])
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    enemy_ship = search_for_string_in_region(hostiles[0][1], OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
+    if enemy_ship:
+        for _ in range(3):
+            approach()
+        pyautogui.press(PROP_MOD)
+        target_lock()
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if check_if_target_is_locked():
+                screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+                search_for_string_in_region(hostiles[0][1], OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
+                orbit_target()
+                pyautogui.press(GUNS)
+                tackle_enemy_ship()
+                time.sleep(1)
+                return True
+            return False
+        return False
 
 
-def check_if_target_is_locked(region: Tuple) -> bool:
+def check_if_target_is_locked() -> bool:
     try:
-        unlock_target_icon_present = pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON, grayscale=False,
-                                                                    confidence=DEFAULT_CONFIDENCE, region=region)
+        unlock_target_icon_present = pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON,
+                                                                    grayscale=False,
+                                                                    confidence=DEFAULT_CONFIDENCE,
+                                                                    region=SELECTED_ITEM_REGION)
         if unlock_target_icon_present is not None:
             pyautogui.moveTo(unlock_target_icon_present)
             return True
@@ -211,8 +202,18 @@ def check_if_scrambler_is_operating() -> bool:
         pass
 
 
+def check_if_webifier_is_operating() -> bool:
+    try:
+        if pyautogui.locateCenterOnScreen(WEBIFIER_EQUIPPED, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+                                          region=TARGETS_REGION):
+            return True
+        return False
+    except pyautogui.ImageNotFoundException:
+        pass
+
+
 def manage_engagement() -> None:
-    if not check_if_target_is_locked(SELECTED_ITEM_REGION):
+    if not check_if_target_is_locked():
         pass
 
 
@@ -233,17 +234,6 @@ def warp_to_safe_spot() -> None:
         search_for_string_in_region('spo', TOP_LEFT_REGION, screenshot, move_mouse_to_string=True)
         pyautogui.click()
         break
-
-
-def switch_tab_to_broadcasts(region: Tuple) -> None:
-    screenshot = jpg_screenshot_of_the_selected_region(region)
-    search_for_string_in_region('eet', region, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
-    time.sleep(0.1)
-    screenshot = jpg_screenshot_of_the_selected_region(region)
-    search_for_string_in_region('Broad', region, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
-    time.sleep(0.1)
 
 
 def clear_broadcast_history() -> None:
@@ -287,6 +277,9 @@ def check_if_in_warp() -> bool:
 
 def set_destination_home() -> None:
     pyautogui.hotkey('alt', 'a', interval=0.1)
+    screenshot = jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
+    search_for_string_in_region('character', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
     screenshot = jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
     search_for_string_in_region('home station', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
@@ -355,6 +348,7 @@ def travel_to_destination() -> None:
 
 def dock_at_station() -> bool:
     stations = [DESTINATION_HOME_STATION, DESTINATION_STATION]
+    select_fw_tab()
     for station in stations:
         try:
             docking_station = pyautogui.locateCenterOnScreen(station,
@@ -387,16 +381,16 @@ def choose_system_to_travel_to(systems: list) -> str:
     return random_system
 
 
-def check_if_docked(region: Tuple) -> bool:
-    screenshot = jpg_screenshot_of_the_selected_region(region)
-    docked = search_for_string_in_region('undock', region, screenshot, move_mouse_to_string=True)
-    if docked:
+def check_if_docked() -> bool:
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if search_for_string_in_region('undock', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
         return True
     return False
 
 
 def check_if_destination_system_was_reached(destination_system: str, region: Tuple) -> bool:
-    switch_tab_to_broadcasts(region)
+    select_fleet_tab()
+    select_broadcasts()
     clear_broadcast_history()
     broadcast_current_location()
     time.sleep(0.2)
@@ -544,11 +538,16 @@ def select_fw_tab() -> bool:
 
 def travel_to_destination_as_fc() -> None:
     global destination
-    form_fleet()
-    time.sleep(0.1)
-    if check_if_docked(SELECTED_ITEM_REGION):
+    if check_if_docked():
+        if not check_if_in_fleet():
+            form_fleet()
+            time.sleep(0.1)
         undock()
         time.sleep(20)
+    else:
+        if not check_if_in_fleet(is_docked=False):
+            form_fleet()
+            time.sleep(0.1)
     # cannot broadcast destination while docked
     destination = set_destination(AMARR_SYSTEMS)
 
@@ -563,10 +562,13 @@ def travel_to_destination_as_fc() -> None:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not check_if_destination_system_was_reached(destination, SCANNER_REGION):
                 travel_to_destination()
-
             else:
                 break
         warp_to_safe_spot()
+        time.sleep(4)
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if not check_if_in_warp():
+                return
 
 
 def align_to(target: list) -> None:
@@ -594,7 +596,7 @@ def travel_to_destination_as_fleet_member() -> None:
         else:
             print('cannot locate broadcasts')
             time.sleep(2)
-    if check_if_docked(SELECTED_ITEM_REGION):
+    if check_if_docked():
         undock()
         time.sleep(20)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
@@ -737,8 +739,17 @@ def set_dscan_angle_to_three_sixty_degree() -> None:
 def check_dscan_result() -> list:
     screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     results = ocr_reader.readtext(screenshot)
-    frigate_on_scan = [(f, r) for f in ALL_FRIGATES for r in results if f == r[1]]
+    frigate_on_scan = [f for f in ALL_FRIGATES for r in results if f == r[1]]
     return frigate_on_scan
+
+
+def check_if_in_fleet(is_docked: bool = True) -> bool:
+    if not is_docked:
+        select_fleet_tab()
+    screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    if search_for_string_in_region('respawn', SCANNER_REGION, screenshot):
+        return True
+    return False
 
 
 def scan_target_within_range(target: list) -> list:
@@ -872,6 +883,7 @@ def check_for_station_in_system() -> bool:
 
 def gtfo() -> None:
     warp_to_safe_spot()
+
     time.sleep(4)
     for _ in MAX_NUMBER_OF_ATTEMPTS:
         if not check_if_in_warp():
@@ -945,33 +957,149 @@ def check_if_location_secured() -> bool:
     return False
 
 
-def fc_mission_plan() -> None:
-    target_coordinates = None
-    hostiles = None
-    travel_to_destination_as_fc()
-    await_fleet_members_to_arrive()
-    scan_results = scan_targets_within_and_outside_scan_range('scout')
+def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:
+    check = [ship for ship in scan_result for avoided_ship in AVOID if ship == avoided_ship]
+    if len(check) > 0:
+        return True
+    return False
+
+
+def await_hostiles_or_site_completion() -> list:
+    initial_scan = True
+    while True:
+        hostiles = check_overview_for_hostiles()
+        if hostiles:
+            return hostiles
+        if initial_scan:
+            short_range_scan_result = make_a_short_range_three_sixty_scan()
+            initial_scan = False
+        else:
+            short_range_scan_result = make_a_short_range_three_sixty_scan(False)
+
+        if check_if_avoided_ship_is_on_scan_result(short_range_scan_result):
+            warp_to_safe_spot()
+            return []
+
+        if check_if_location_secured():
+            return []
+        time.sleep(3)
+
+
+def tackle_enemy_ship() -> None:
+    if SCRAMBLER_EQUIPPED and not check_if_scrambler_is_operating():
+        pyautogui.press(SCRAM)
+    if WEBIFIER_EQUIPPED and not check_if_webifier_is_operating():
+        pyautogui.press(WEB)
+
+
+def open_or_close_mail() -> None:
+    with pyautogui.hold('alt'):
+        pyautogui.press('i')
+
+
+def check_insurance(open_mail: bool = True) -> bool:
+    if open_mail:
+        open_or_close_mail()
+    screenshot = jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
+    if search_for_string_in_region('insurance', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        if search_for_string_in_region('commerce', MID_TO_TOP_REGION, screenshot):
+            search_for_string_in_region('delete', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
+            pyautogui.click()
+            open_or_close_mail()
+            return True
+        open_or_close_mail()
+        return False
+    search_for_string_in_region('communications', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+    check_insurance(open_mail=False)
+
+
+def scan_sites_within_scan_range(scanned_site_type: str) -> list:
+    scan_results = scan_targets_within_and_outside_scan_range(scanned_site_type)
     if scan_results['targets_within_scan_range']:
         for target in scan_results['targets_within_scan_range']:
             if len(scan_target_within_range(target)) > 0:
                 pass
             else:
                 target_coordinates = bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION)
-                break
-    broadcast_align_to(target_coordinates)
-    warp_within_70_km(target_coordinates)
-    jump_through_acceleration_gate()
+                return target_coordinates
+    return []
 
+
+def broadcast_target(target_coordinates: list) -> None:
+    pyautogui.moveTo(target_coordinates).rightClick()
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    search_for_string_in_region('broadcast', OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+
+
+def fight_hostiles_while_any_in_overview(hostiles) -> None:
+    global gtfo_flag
+    for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
+        caught_up_and_engaged_target = target_lock_and_engage_a_hostile_ship(hostiles)
+        if not caught_up_and_engaged_target:
+            hostiles = check_overview_for_hostiles()
+            if hostiles:
+                fight_hostiles_while_any_in_overview(hostiles)
+            else:
+                return
+        if attempt == (MAX_NUMBER_OF_ATTEMPTS-1):
+            gtfo_flag = True
+            gtfo()
+
+
+def behaviour_at_the_site() -> None:
+    global gtfo_flag
+    hostiles = await_hostiles_or_site_completion()
+    if len(hostiles) > 0:
+        broadcast_enemy_spotted()
+        broadcast_target(hostiles[0][0])
+    fight_hostiles_while_any_in_overview(hostiles)
+    if gtfo_flag:
+        return
     while True:
-        hostiles = check_overview_for_hostiles()
-        if hostiles or check_if_location_secured():
+        if check_if_target_is_locked():
+            tackle_enemy_ship()
+        else:
+            hostiles = await_hostiles_or_site_completion()
+            if len(hostiles) > 0:
+                broadcast_enemy_spotted()
+            elif len(hostiles) == 0:
+                break
+            caught_up_and_engaged_target = target_lock_and_engage_a_hostile_ship(hostiles)
+            if not caught_up_and_engaged_target:
+                warp_to_safe_spot()
+                break
+        if gtfo_flag:
+            return
+
+
+def fc_mission_plan() -> None:
+    for _ in range(len(AMARR_SYSTEMS)):
+        if check_insurance():
             break
+        travel_to_destination_as_fc()
+        await_fleet_members_to_arrive()
+        target_coordinates = scan_sites_within_scan_range('scout')
+        if target_coordinates:
+            warp_within_70_km(target_coordinates)
+            broadcast_align_to(target_coordinates)
+            time.sleep(4)
+            for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+                if not check_if_in_warp():
+                    break
+            jump_through_acceleration_gate()
+            behaviour_at_the_site()
+
+    travel_home()
 
 
 def main_loop() -> None:
-    # if IS_FC:
-    #     fc_mission_plan()
-    region_selector()
+    turn_recording_on_or_off()
+    time.sleep(8)
+    if IS_FC:
+        fc_mission_plan()
 
 
 if __name__ == "__main__":

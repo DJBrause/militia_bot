@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FLEET_MEMBERS_COUNT = 1
+FLEET_MEMBERS_COUNT = 0
 MAX_NUMBER_OF_ATTEMPTS = 30
 IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
@@ -15,12 +15,15 @@ SCRAM = 'f3'
 GUNS = 'f4'
 MAX_SCAN_RANGE = 14.3
 MAX_PIXEL_SPREAD = 5
+SCRAMBLER_EQUIPPED = True
+WEBIFIER_EQUIPPED = False
 
 
 UNLOCK_TARGET_ICON = 'images/unlock_icon.PNG'
 CANNOT_LOCK_ICON = 'images/cannot_lock.PNG'
 LOCK_TARGET_ICON = 'images/lock_target.PNG'
 SCRAMBLER_ON_ICON = 'images/scrambler_on.PNG'
+WEBIFIER_ON_ICON = 'images/webifier_on.PNG'
 GATE_ON_ROUTE = 'images/gate_on_route.PNG'
 DESTINATION_STATION = 'images/destination_station.PNG'
 DESTINATION_HOME_STATION = 'images/destination_home_station.PNG'
@@ -47,6 +50,11 @@ MINER_FRIGATE = ['Venture']
 NPC_MINMATAR = 'Minmatar Frigate'
 NPC_AMARR = 'Amarr Frigate'
 ALL_FRIGATES = AMARR_FRIGATES + CALDARI_FRIGATES + GALLENTE_FRIGATES + MINMATAR_FRIGATES + ROOKIE_SHIPS + MINER_FRIGATE
+CALDARI_DESTROYERS = ['Cormorant', 'Corax', 'Flycatcher', 'Jackdaw', 'Svipul']
+GALLENTE_DESTROYERS = ['Algos', 'Catalyst', 'Dragoon', 'Magus', 'Hecate']
+AMARR_DESTROYERS = ['Coercer', 'Dragoon', 'Heretic', 'Confessor', 'Sunesis']
+MINMATAR_DESTROYERS = ['Thrasher', 'Coercer', 'Svipul', 'Jackdaw', 'Hecate']
+ALL_DESTROYERS = CALDARI_DESTROYERS + GALLENTE_DESTROYERS + AMARR_DESTROYERS + MINMATAR_DESTROYERS
 AVOID = ['Slicer', 'Hookbill']
 MINMATAR_SYSTEMS = ['Kourmonen', 'Huola', 'Anka', 'Sosala']
 AMARR_SYSTEMS = ['Tannakan', 'Iesa', 'Kamela', 'Tzvi']
