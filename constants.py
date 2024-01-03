@@ -10,13 +10,13 @@ IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
 MAX_EXPECTED_TRAVEL_DISTANCE = 50
 PROP_MOD = 'f1'
-WEB = 'f2'
-SCRAM = 'f3'
+WEB = 'f3'
+SCRAM = 'f2'
 GUNS = 'f4'
 MAX_SCAN_RANGE = 14.3
 MAX_PIXEL_SPREAD = 5
-SCRAMBLER_EQUIPPED = True
-WEBIFIER_EQUIPPED = False
+SCRAMBLER_EQUIPPED = False
+WEBIFIER_EQUIPPED = True
 
 
 UNLOCK_TARGET_ICON = 'images/unlock_icon.PNG'
@@ -28,6 +28,7 @@ GATE_ON_ROUTE = 'images/gate_on_route.PNG'
 DESTINATION_STATION = 'images/destination_station.PNG'
 DESTINATION_HOME_STATION = 'images/destination_home_station.PNG'
 DSCAN_SLIDER = 'images/dscan_slider.PNG'
+MORE_ICON = 'images/more_icon.PNG'
 
 SCANNER_REGION = ast.literal_eval(os.environ.get('SCANNER_REGION'))
 CAPACITOR_REGION = ast.literal_eval(os.environ.get('CAPACITOR_REGION'))
@@ -41,10 +42,13 @@ TEST_REGION = ast.literal_eval(os.environ.get('TEST_REGION'))
 HOME_SYSTEM = os.environ.get('HOME')
 PC_SPECIFIC_CONFIDENCE = float(os.environ.get('PC_SPECIFIC_CONFIDENCE'))
 
-AMARR_FRIGATES = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer']
-CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill']
+AMARR_FRIGATES = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer',
+                  'Imperial Navy Slicer']
+CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill',
+                    'Caldari Navy Hookbill']
 GALLENTE_FRIGATES = ['Atron', 'Navitas', 'Tristan', 'Incursus', 'Maulus', 'Imicus', 'Comet']
-MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Reaper', 'Firetail', 'Vigil']
+MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Reaper', 'Firetail', 'Vigil',
+                     'Vigil Fleet Issue']
 ROOKIE_SHIPS = ['Ibis', 'Reaper', 'Impairor', 'Velator']
 MINER_FRIGATE = ['Venture']
 NPC_MINMATAR = 'Minmatar Frigate'
@@ -55,6 +59,6 @@ GALLENTE_DESTROYERS = ['Algos', 'Catalyst', 'Dragoon', 'Magus', 'Hecate']
 AMARR_DESTROYERS = ['Coercer', 'Dragoon', 'Heretic', 'Confessor', 'Sunesis']
 MINMATAR_DESTROYERS = ['Thrasher', 'Coercer', 'Svipul', 'Jackdaw', 'Hecate']
 ALL_DESTROYERS = CALDARI_DESTROYERS + GALLENTE_DESTROYERS + AMARR_DESTROYERS + MINMATAR_DESTROYERS
-AVOID = ['Slicer', 'Hookbill']
+AVOID = ['Slicer', 'Hookbill', 'Vigil',  'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill']
 MINMATAR_SYSTEMS = ['Kourmonen', 'Huola', 'Anka', 'Sosala']
-AMARR_SYSTEMS = ['Tannakan', 'Iesa', 'Kamela', 'Tzvi']
+AMARR_SYSTEMS = ['Iesa', 'Kamela', 'Tzvi'] #'Tannakan',
