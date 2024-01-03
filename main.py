@@ -1,4 +1,5 @@
 from typing import Tuple, List, Union
+from dataclasses import dataclass
 
 import pyautogui
 import io
@@ -23,10 +24,16 @@ import logging
 # todo think about utilizing watchlist for fleet management
 
 ocr_reader = Reader(['en'])
-dscan_confidence = 0.65
-destination = ''
-unvisited_systems = []
-gtfo_flag = False
+
+
+@dataclass
+class GenericVariables:
+    unvisited_systems: list
+    dscan_confidence: float = 0.65
+    destination: str = ''
+
+
+generic_variables = GenericVariables(unvisited_systems=[])
 
 
 def region_selector():
@@ -181,10 +188,11 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
 
         if initial_loop:
             pyautogui.press(PROP_MOD)
+            tackle_enemy_ship(initial_run=True)
+            pyautogui.press(GUNS)
             for _ in range(2):
                 target_lock()
             time.sleep(1)
-            pyautogui.press(GUNS)
             initial_loop = False
         time.sleep(0.3)
         tackle_enemy_ship()
@@ -193,11 +201,11 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
             start_time = time.time()
 
         if not check_if_target_is_locked():
+            pyautogui.press(GUNS)
             logging.info('Target lock lost')
             target_lock_lost = True
             target_lock()
             time.sleep(1)
-            pyautogui.press(GUNS)
             if start_time and (time.time() - start_time) > 30:
                 warp_to_safe_spot()
                 break
@@ -410,14 +418,13 @@ def open_or_close_notepad() -> None:
 
 
 def choose_system_to_travel_to(systems: list) -> str:
-    global unvisited_systems
-    if len(unvisited_systems) == 0:
+    if len(generic_variables.unvisited_systems) == 0:
         random_system = random.choice(systems)
         unvisited_systems = systems
         unvisited_systems.remove(random_system)
         return random_system
-    random_system = random.choice(unvisited_systems)
-    unvisited_systems.remove(random_system)
+    random_system = random.choice(generic_variables.unvisited_systems)
+    generic_variables.unvisited_systems.remove(random_system)
     return random_system
 
 
@@ -441,50 +448,60 @@ def check_if_destination_system_was_reached(destination_system: str, region: Tup
 
 
 def broadcast_destination() -> bool:
-    if destination is not None:
+    if generic_variables.destination is not None:
         open_or_close_notepad()
         screenshot = jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-        search_for_string_in_region(destination, TOP_LEFT_REGION, screenshot, move_mouse_to_string=True)
+        search_for_string_in_region(generic_variables.destination,
+                                    TOP_LEFT_REGION,
+                                    screenshot,
+                                    move_mouse_to_string=True)
         pyautogui.rightClick()
         screenshot = jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-        broadcast = search_for_string_in_region('broadcast', TOP_LEFT_REGION, screenshot, move_mouse_to_string=True)
+        broadcast = search_for_string_in_region('broadcast',
+                                                TOP_LEFT_REGION,
+                                                screenshot,
+                                                move_mouse_to_string=True)
         if broadcast:
             time.sleep(0.3)
             pyautogui.click()
         open_or_close_notepad()
-        print(f'Destination broadcast to {destination} sent')
+        print(f'Destination broadcast to {generic_variables.destination} sent')
         return True
     return False
 
 
-def set_destination(systems: list) -> Union[bool, str]:
-    global destination
-    if destination and destination in systems:
-        systems.remove(destination)
+def set_destination(systems: list) -> bool:
+    if generic_variables.destination and generic_variables.destination in systems:
+        systems.remove(generic_variables.destination)
     select_gates_only_tab()
     move_mouse_away_from_overview()
     time.sleep(0.5)
     open_or_close_notepad()
     time.sleep(4)
-    destination = choose_system_to_travel_to(systems)
+    generic_variables.destination = choose_system_to_travel_to(systems)
     screenshot = jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-    destination_system = search_for_string_in_region(destination, TOP_LEFT_REGION, screenshot,
+    destination_system = search_for_string_in_region(generic_variables.destination,
+                                                     TOP_LEFT_REGION,
+                                                     screenshot,
                                                      move_mouse_to_string=True)
     if destination_system:
         time.sleep(0.3)
         pyautogui.rightClick()
         time.sleep(0.3)
     else:
+
         open_or_close_notepad()
         return False
     screenshot = jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-    destination_confirmation = search_for_string_in_region('destination', TOP_LEFT_REGION, screenshot,
+    destination_confirmation = search_for_string_in_region('destination',
+                                                           TOP_LEFT_REGION,
+                                                           screenshot,
                                                            move_mouse_to_string=True)
     if destination_confirmation:
         pyautogui.click()
         pyautogui.moveTo(destination_system)
     open_or_close_notepad()
-    return destination
+    return True
 
 
 def create_fleet_advert() -> None:
@@ -545,19 +562,17 @@ def form_fleet() -> None:
     if form_fleet_button:
         pyautogui.click()
         move_mouse_away_from_overview()
-        return
     else:
         results = ocr_reader.readtext(screenshot)
         for result in results:
             searched_string = 'fleet'
             if searched_string.lower() in result[1].lower():
                 middle_of_bounding_box = bounding_box_center_coordinates(result[0], region=SCANNER_REGION)
-                pyautogui.click(x=middle_of_bounding_box[0], y=middle_of_bounding_box[1])
+                pyautogui.click(middle_of_bounding_box)
                 screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
             if search_for_string_in_region('form fleet', SCANNER_REGION, screenshot, move_mouse_to_string=True):
                 pyautogui.click()
                 move_mouse_away_from_overview()
-                return
     create_fleet_advert()
     select_broadcasts()
 
@@ -577,7 +592,6 @@ def select_fw_tab() -> bool:
 
 
 def travel_to_destination_as_fc() -> None:
-    global destination
     if check_if_docked():
         if not check_if_in_fleet():
             form_fleet()
@@ -589,7 +603,7 @@ def travel_to_destination_as_fc() -> None:
             form_fleet()
             time.sleep(0.1)
     # cannot broadcast destination while docked
-    destination = set_destination(AMARR_SYSTEMS)
+    set_destination(AMARR_SYSTEMS)
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if select_fleet_tab():
@@ -598,9 +612,10 @@ def travel_to_destination_as_fc() -> None:
         if select_broadcasts():
             break
     wait_for_fleet_members_to_join_and_broadcast_destination()
-    if destination:
+    if generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-            if not check_if_destination_system_was_reached(destination, SCANNER_REGION):
+            if not check_if_destination_system_was_reached(generic_variables.destination,
+                                                           SCANNER_REGION):
                 travel_to_destination()
             else:
                 break
@@ -630,7 +645,6 @@ def travel_home(fleet_up: bool = False) -> None:
 
 
 def travel_to_destination_as_fleet_member() -> None:
-    global destination
     join_existing_fleet()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if select_broadcasts():
@@ -650,7 +664,7 @@ def travel_to_destination_as_fleet_member() -> None:
             break
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if not check_if_destination_system_was_reached(destination, SCANNER_REGION):
+        if not check_if_destination_system_was_reached(generic_variables.destination, SCANNER_REGION):
             travel_to_destination()
         else:
             break
@@ -663,12 +677,11 @@ def travel_to_destination_as_fleet_member() -> None:
 
 
 def set_destination_from_broadcast() -> bool:
-    global destination
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
         for system in MINMATAR_SYSTEMS:
             if search_for_string_in_region(system, SCANNER_REGION, screenshot, move_mouse_to_string=True):
-                destination = system
+                generic_variables.destination = system
                 pyautogui.rightClick()
                 time.sleep(0.1)
                 screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
@@ -709,7 +722,9 @@ def select_probe_scanner() -> None:
 def set_dscan_range_to_minimum() -> None:
     range_slider = None
     screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER, confidence=dscan_confidence, region=SCANNER_REGION)
+    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                          confidence=generic_variables.dscan_confidence,
+                                          region=SCANNER_REGION)
     for slider in sliders:
         if range_slider is None:
             range_slider = slider
@@ -727,7 +742,9 @@ def set_dscan_range_to_maximum() -> bool:
     range_slider = None
     screen_width, screen_height = pyautogui.size()
     try:
-        sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER, confidence=dscan_confidence, region=SCANNER_REGION)
+        sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                              confidence=generic_variables.dscan_confidence,
+                                              region=SCANNER_REGION)
         for slider in sliders:
             if range_slider is None:
                 range_slider = slider
@@ -747,7 +764,9 @@ def set_dscan_range_to_maximum() -> bool:
 def set_dscan_angle_to_five_degree() -> None:
     angle_slider = None
     screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER, confidence=dscan_confidence, region=SCANNER_REGION)
+    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                          confidence=generic_variables.dscan_confidence,
+                                          region=SCANNER_REGION)
     for slider in sliders:
         if angle_slider is None:
             angle_slider = slider
@@ -764,7 +783,9 @@ def set_dscan_angle_to_five_degree() -> None:
 def set_dscan_angle_to_three_sixty_degree() -> None:
     angle_slider = None
     screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER, confidence=dscan_confidence, region=SCANNER_REGION)
+    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                          confidence=generic_variables.dscan_confidence,
+                                          region=SCANNER_REGION)
     for slider in sliders:
         if angle_slider is None:
             angle_slider = slider
@@ -905,8 +926,6 @@ def warp_within_70_km(target: list, region: Tuple) -> bool:
 
 
 def scan_sites_in_system(site: str) -> None:
-    global destination
-
     targets_within_and_outside_scan_range = scan_targets_within_and_outside_scan_range(site)
 
     for target_within_range in targets_within_and_outside_scan_range['targets_within_scan_range']:
@@ -1015,23 +1034,33 @@ def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:
     return False
 
 
+# todo This function got bloated. Try to refactor it.
 def get_hostiles_list_or_await_site_completion() -> list:
     initial_scan = True
     enemy_on_scan = False
     short_range_scan_result = []
+    counter = 0
+    start_time = time.time()
     while True:
-        beep_x_times(1)
-        hostiles = check_overview_for_hostiles()
-        beep_x_times(1)
-        if hostiles:
-            logging.info(f'Hostiles present in the overview: {hostiles}')
-            return hostiles
+        if (time.time() - start_time) > 900:
+            logging.warning('15 minutes passed, I got bored. Moving on.')
+            warp_to_safe_spot()
+            time.sleep(4)
+            for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+                if not check_if_in_warp():
+                    break
+            return []
+        detected_hostiles = check_overview_for_hostiles()
+        if detected_hostiles:
+            logging.warning(f'Hostiles are present in the overview: {detected_hostiles}')
+            return detected_hostiles
         if initial_scan:
             short_range_scan_result = make_a_short_range_three_sixty_scan()
             initial_scan = False
         elif not enemy_on_scan:
             short_range_scan_result = make_a_short_range_three_sixty_scan(False)
             if short_range_scan_result:
+                logging.warning(f'A ship was detected on scan: {short_range_scan_result}')
                 enemy_on_scan = True
         if check_if_avoided_ship_is_on_scan_result(short_range_scan_result):
             logging.info('A ship that is present in the avoid list was detected short scan')
@@ -1039,8 +1068,18 @@ def get_hostiles_list_or_await_site_completion() -> list:
             return []
         if check_if_location_secured():
             logging.info('Site capture completed. Long live the Holy Amarr!')
+            warp_to_safe_spot()
+            time.sleep(4)
+            for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+                if not check_if_in_warp():
+                    break
             clear_local_chat_content()
             return []
+        if enemy_on_scan:
+            if counter >= 30:
+                enemy_on_scan = False
+                counter = 0
+            counter += 1
 
 
 def stop_ship() -> None:
@@ -1048,10 +1087,15 @@ def stop_ship() -> None:
         pyautogui.press('space')
 
 
-def tackle_enemy_ship() -> None:
-    if SCRAMBLER_EQUIPPED and not check_if_scrambler_is_operating():
+def tackle_enemy_ship(initial_run: bool = False) -> None:
+    if initial_run:
+        if SCRAMBLER_EQUIPPED:
+            pyautogui.press(SCRAM)
+        if WEBIFIER_EQUIPPED:
+            pyautogui.press(WEB)
+    elif SCRAMBLER_EQUIPPED and not check_if_scrambler_is_operating():
         pyautogui.press(SCRAM)
-    if WEBIFIER_EQUIPPED and not check_if_webifier_is_operating():
+    elif WEBIFIER_EQUIPPED and not check_if_webifier_is_operating():
         pyautogui.press(WEB)
 
 
@@ -1118,8 +1162,6 @@ def behaviour_at_the_site() -> None:
 
 def fc_mission_plan() -> None:
     for _ in range(len(AMARR_SYSTEMS)):
-        if check_insurance():
-            break
         travel_to_destination_as_fc()
         await_fleet_members_to_arrive()
         target_coordinates = scan_sites_within_scan_range('scout')
@@ -1156,4 +1198,5 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    main_loop()
+    # main_loop()
+    form_fleet()
