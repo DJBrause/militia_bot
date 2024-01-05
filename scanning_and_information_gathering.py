@@ -177,12 +177,12 @@ def check_insurance(open_mail: bool = True) -> bool:
 def check_overview_for_hostiles() -> list:
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     results = hf.ocr_reader.readtext(screenshot)
-    targets = [(cc.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results
+    targets = [(hf.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results
                for ship in ALL_FRIGATES if target[1] == ship]
     if targets:
         logging.info('Targets were detected')
         return targets
-    npc_targets = [(cc.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results if
+    npc_targets = [(hf.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results if
                    target[1] == NPC_MINMATAR]
     if npc_targets:
         logging.info('NPC targets were detected')
@@ -223,8 +223,8 @@ def scan_sites_in_system(site: str) -> None:
         time.sleep(5)
 
     for target_outside_range in targets_within_and_outside_scan_range['targets_outside_scan_range']:
-        nm.warp_within_70_km(cc.bounding_box_center_coordinates(target_outside_range[1][0],
-                                                                                  OVERVIEW_REGION), OVERVIEW_REGION)
+        nm.warp_within_70_km(hf.bounding_box_center_coordinates(target_outside_range[1][0],
+                                                                OVERVIEW_REGION), OVERVIEW_REGION)
         time.sleep(3)
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not check_if_in_warp():
@@ -238,14 +238,14 @@ def scan_sites_in_system(site: str) -> None:
 def scan_sites_within_scan_range(scanned_site_type: str) -> list:
     scan_results = scan_targets_within_and_outside_scan_range(scanned_site_type)
     if scan_results['targets_within_scan_range']:
-        target_coordinates = [cc.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION) for target in
+        target_coordinates = [hf.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION) for target in
                               scan_results['targets_within_scan_range'] if len(scan_target_within_range(target)) == 0]
         return target_coordinates
     return []
 
 
 def scan_target_within_range(target: list) -> list:
-    pyautogui.moveTo(cc.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION))
+    pyautogui.moveTo(hf.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION))
     pyautogui.keyDown('v')
     pyautogui.click()
     pyautogui.keyUp('v')
@@ -271,12 +271,13 @@ def scan_targets_within_and_outside_scan_range(scan_target: str) -> dict:
     for i in searched_term_found:
         for y in searched_term_found:
             y_value = y[0][2][1]
-            if i != y and y_value-MAX_PIXEL_SPREAD <= i[0][2][1] <= y_value+MAX_PIXEL_SPREAD:
+            if i != y and y_value - MAX_PIXEL_SPREAD <= i[0][2][1] <= y_value + MAX_PIXEL_SPREAD:
                 filtered_searched_term_found.remove(i)
 
     distance_in_au = [result for result in results if result[1][0].lower().isdigit()]
     distance_and_site_pairs = [(distance, site) for distance in distance_in_au for site in filtered_searched_term_found
-                               if site[0][2][1]-MAX_PIXEL_SPREAD <= distance[0][2][1] <= site[0][2][1]+MAX_PIXEL_SPREAD]
+                               if site[0][2][1] - MAX_PIXEL_SPREAD <= distance[0][2][1] <= site[0][2][
+                                   1] + MAX_PIXEL_SPREAD]
 
     for pair in distance_and_site_pairs:
         distance_str_to_float = pair[0][1].replace(',', '.')
