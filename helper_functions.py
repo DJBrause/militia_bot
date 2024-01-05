@@ -7,10 +7,12 @@ from PIL import Image
 from typing import List, Tuple, Union
 from easyocr import Reader
 
-from constants import (SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
-                       OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB)
+from constants import (
+    SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
+    OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB
+)
 
-from scanning_and_information_gathering import check_if_scrambler_is_operating, check_if_webifier_is_operating
+import scanning_and_information_gathering as sig
 
 ocr_reader = Reader(['en'])
 
@@ -171,9 +173,9 @@ def tackle_enemy_ship(initial_run: bool = False) -> None:
             pyautogui.press(SCRAM)
         if WEBIFIER_EQUIPPED:
             pyautogui.press(WEB)
-    elif SCRAMBLER_EQUIPPED and not check_if_scrambler_is_operating():
+    elif SCRAMBLER_EQUIPPED and not sig.check_if_scrambler_is_operating():
         pyautogui.press(SCRAM)
-    elif WEBIFIER_EQUIPPED and not check_if_webifier_is_operating():
+    elif WEBIFIER_EQUIPPED and not sig.check_if_webifier_is_operating():
         pyautogui.press(WEB)
 
 

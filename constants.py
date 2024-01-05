@@ -18,7 +18,6 @@ MAX_PIXEL_SPREAD = 5
 SCRAMBLER_EQUIPPED = False
 WEBIFIER_EQUIPPED = True
 
-
 UNLOCK_TARGET_ICON = 'images/unlock_icon.PNG'
 CANNOT_LOCK_ICON = 'images/cannot_lock.PNG'
 LOCK_TARGET_ICON = 'images/lock_target.PNG'
