@@ -7,7 +7,10 @@ from PIL import Image
 from typing import List, Tuple, Union
 from easyocr import Reader
 
-from constants import MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION
+from constants import (SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
+                       OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB)
+
+from scanning_and_information_gathering import check_if_scrambler_is_operating, check_if_webifier_is_operating
 
 ocr_reader = Reader(['en'])
 
@@ -84,11 +87,9 @@ def open_or_close_mail() -> None:
     with pyautogui.hold('alt'):
         pyautogui.press('i')
 
+
 def open_or_close_notepad() -> None:
     pyautogui.hotkey('ctrl', 'n', interval=0.1)
-
-
-
 
 
 def region_selector():
@@ -189,4 +190,3 @@ def test_check_region(region: Tuple) -> list:
 
 def turn_recording_on_or_off() -> None:
     pyautogui.hotkey('alt', 'f9', interval=0.1)
-

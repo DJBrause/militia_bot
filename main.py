@@ -30,7 +30,6 @@ from scanning_and_information_gathering import (check_if_target_is_locked, scan_
 # todo create status checklist to make sure all steps were completed successfully
 # todo create confusion detection to check if bot is stuck
 # todo think about utilizing watchlist for fleet management
-# todo refactor code - split code into several files
 # todo make readme
 # todo test the shit out of this project
 
