@@ -43,6 +43,7 @@ generic_variables = GenericVariables(unvisited_systems=[])
 
 
 def behaviour_at_the_site() -> None:
+    logging.info("Arrived at the site. Awaiting for hostiles or site completion.")
     hostiles = get_hostiles_list_or_await_site_completion()
     if len(hostiles) > 0:
         cc.broadcast_enemy_spotted()
@@ -63,7 +64,7 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
                                                     screenshot,
                                                     move_mouse_to_string=True)
         if enemy_ship:
-            logging.info(f'Enemy ship was detected: {enemy_ship}')
+            logging.info(f'Enemy ship was detected and engaged: {enemy_ship}')
             nm.approach()
             time.sleep(0.1)
             cc.broadcast_target(enemy_ship)
@@ -84,7 +85,7 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
 
         if not sig.check_if_target_is_locked():
             pyautogui.press(GUNS)
-            logging.info('Target lock lost')
+            logging.info('Target lock lost.')
             target_lock_lost = True
             hf.target_lock()
             time.sleep(1)

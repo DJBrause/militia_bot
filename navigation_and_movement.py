@@ -175,6 +175,7 @@ def stop_ship() -> None:
 
 
 def travel_home(fleet_up: bool = False) -> None:
+    logging.info(f"Returning to home system: {HOME_SYSTEM}")
     if fleet_up:
         cc.form_fleet()
     set_destination_home()
@@ -274,6 +275,7 @@ def warp_to_member_if_enemy_is_spotted() -> None:
 
 
 def warp_to_safe_spot() -> None:
+    logging.info("Warping to a safe spot.")
     hf.move_mouse_away_from_overview()
     pyautogui.rightClick()
     time.sleep(0.1)
@@ -299,7 +301,7 @@ def warp_to_scout_combat_site(region: Tuple) -> None:
 
 
 def warp_within_70_km(target: list, region: Tuple) -> bool:
-    logging.info(f"Target: {target}")
+    logging.info("Warping within 70km.")
     pyautogui.moveTo(target)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
@@ -317,6 +319,7 @@ def warp_within_70_km(target: list, region: Tuple) -> bool:
                                        move_mouse_to_string=True)
         pyautogui.click()
         return True
+    logging.warning(f"Something went wrong. Can't find the related string in region: {region}.")
     return False
 
 
@@ -328,6 +331,7 @@ def warp_to_0(target: list, region: Tuple) -> bool:
                                       move_mouse_to_string=True):
         pyautogui.click()
         return True
+    logging.warning(f"Something went wrong. Can't find the related string in region: {region}.")
     return False
 
 

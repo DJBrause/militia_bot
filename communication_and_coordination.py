@@ -15,6 +15,7 @@ import navigation_and_movement as nm
 
 
 def await_fleet_members_to_arrive() -> None:
+    logging.info("Waiting for all fleet members to arrive at destination.")
     hf.beep_x_times(1)
     fleet_members_to_arrive = FLEET_MEMBERS_COUNT
     hf.select_broadcasts()
@@ -27,6 +28,7 @@ def await_fleet_members_to_arrive() -> None:
 
 
 def await_orders() -> None:
+    logging.info("Pending orders.")
     hf.select_fleet_tab()
     hf.select_broadcasts()
     while True:
@@ -105,6 +107,7 @@ def check_for_broadcast_and_align() -> bool:
 
 
 def create_fleet_advert() -> None:
+    logging.info("Creating fleet advert.")
     hf.select_fleet_tab()
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     hf.search_for_string_in_region('advert', SCANNER_REGION, screenshot, move_mouse_to_string=True)
@@ -120,6 +123,7 @@ def create_fleet_advert() -> None:
 
 
 def form_fleet() -> None:
+    logging.info("Forming fleet.")
     pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
     time.sleep(0.2)
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
@@ -145,6 +149,7 @@ def form_fleet() -> None:
 
 
 def join_existing_fleet() -> None:
+    logging.info("Joining an existing fleet.")
     pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     hf.search_for_string_in_region('ind', SCANNER_REGION, screenshot, move_mouse_to_string=True)
@@ -183,6 +188,7 @@ def target_broadcast_ship(region: Tuple) -> bool:
 
 
 def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
+    logging.info("Awaiting 'in position' broadcast from all fleet members.")
     broadcast_count = 0
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if sig.check_for_in_position_broadcast():

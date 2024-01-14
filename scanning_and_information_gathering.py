@@ -49,7 +49,9 @@ def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:
     avoided_ship_on_scan = [ship for ship in scan_result for avoided_ship in AVOID if ship == avoided_ship]
     print(avoided_ship_on_scan)
     if len(avoided_ship_on_scan) > 0:
+        logging.info("Detected ship is present on avoidance list.")
         return True
+    logging.info("Detected ship is not present on avoidance list.")
     return False
 
 
@@ -66,18 +68,24 @@ def check_if_destination_system_was_reached(destination_system: str, region: Tup
 
 
 def check_if_docked() -> bool:
+    logging.info("Checking if ship is docked.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     if hf.search_for_string_in_region('undock', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
+        logging.info("The ship is docked.")
         return True
+    logging.info("The ship is not docked.")
     return False
 
 
 def check_if_in_fleet(is_docked: bool = True) -> bool:
+    logging.info("Checking if ship is in fleet.")
     if not is_docked:
         hf.select_fleet_tab()
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     if hf.search_for_string_in_region('respawn', SCANNER_REGION, screenshot):
+        logging.info("The ship is in fleet.")
         return True
+    logging.info("The ship is not in fleet.")
     return False
 
 
