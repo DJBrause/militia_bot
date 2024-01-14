@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FLEET_MEMBERS_COUNT = 0
+FLEET_MEMBERS_COUNT = 1
 MAX_NUMBER_OF_ATTEMPTS = 30
 IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
@@ -60,4 +60,4 @@ MINMATAR_DESTROYERS = ['Thrasher', 'Coercer', 'Svipul', 'Jackdaw', 'Hecate']
 ALL_DESTROYERS = CALDARI_DESTROYERS + GALLENTE_DESTROYERS + AMARR_DESTROYERS + MINMATAR_DESTROYERS
 AVOID = ['Slicer', 'Hookbill', 'Vigil',  'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill']
 MINMATAR_SYSTEMS = ['Kourmonen', 'Huola', 'Anka', 'Sosala']
-AMARR_SYSTEMS = ['Iesa', 'Kamela', 'Tzvi'] #'Tannakan',
+AMARR_SYSTEMS = ['Lamaa', 'Kamela', 'Sahtogas']

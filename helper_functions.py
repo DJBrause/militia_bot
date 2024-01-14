@@ -1,6 +1,7 @@
 import time
 import keyboard
 import winsound
+import logging
 import pyautogui
 import io
 from PIL import Image
@@ -14,7 +15,7 @@ from constants import (
 
 import scanning_and_information_gathering as sig
 
-ocr_reader = Reader(['en'])
+ocr_reader = Reader(['en'], gpu=True)
 
 
 def bounding_box_center_coordinates(bounding_box: List, region: Tuple) -> [int, int]:
@@ -119,7 +120,7 @@ def search_for_string_in_region(searched_string: str, region: Tuple, image_file:
         -> Union[bool, list]:
     results = ocr_reader.readtext(image_file)
     if debug:
-        print(results)
+        logging.debug(f"{results}")
     try:
         matching_results = []
         for result in results:

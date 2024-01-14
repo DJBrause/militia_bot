@@ -25,6 +25,12 @@ import scanning_and_information_gathering as sig
 # todo make readme
 # todo test the shit out of this project
 
+logging.basicConfig(filename='logfile.log',
+                    level=logging.INFO,
+                    filemode='w',
+                    encoding='utf-8',
+                    format="%(asctime)s %(levelname)s %(message)s")
+
 
 @dataclass
 class GenericVariables:
@@ -93,44 +99,38 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
             break
 
 
+def scan_site_and_warp_to_70_if_empty(target_site: str) -> bool:
+    target_coordinates = sig.scan_sites_within_scan_range(target_site)
+    if target_coordinates:
+        try:
+            nm.warp_within_70_km(target_coordinates, OVERVIEW_REGION)
+        except pyautogui.PyAutoGUIException:
+            logging.info(f"Target coordinates: {target_coordinates}")
+            return False
+        cc.broadcast_align_to(target_coordinates)
+        return True
+    return False
+
+
 def fc_mission_plan() -> None:
     for _ in range(len(AMARR_SYSTEMS)):
         nm.travel_to_destination_as_fc()
         cc.await_fleet_members_to_arrive()
-        target_coordinates = sig.scan_sites_within_scan_range('scout')
-        if target_coordinates:
-            nm.warp_within_70_km(target_coordinates, OVERVIEW_REGION)
-            cc.broadcast_align_to(target_coordinates)
-            time.sleep(4)
-            for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-                if not sig.check_if_in_warp():
-                    break
+        if scan_site_and_warp_to_70_if_empty('scout'):
+            nm.wait_for_warp_to_end()
             nm.jump_through_acceleration_gate()
             behaviour_at_the_site()
             if sig.check_insurance():
                 break
         else:
-            if sig.check_probe_scanner_for_sites_and_warp_to_70('scout'):
-                time.sleep(4)
-                for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-                    if not sig.check_if_in_warp():
+            if sig.check_probe_scanner_and_try_to_activate_site('scout'):
+                if scan_site_and_warp_to_70_if_empty('scout'):
+                    nm.wait_for_warp_to_end()
+                    nm.jump_through_acceleration_gate()
+                    behaviour_at_the_site()
+                    if sig.check_insurance():
                         break
-                nm.jump_through_acceleration_gate()
-                behaviour_at_the_site()
-                if sig.check_insurance():
-                    break
     nm.travel_home()
-
-
-def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
-    broadcast_count = 0
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if sig.check_for_in_position_broadcast():
-            cc.broadcast_destination()
-            broadcast_count += 1
-        if broadcast_count == FLEET_MEMBERS_COUNT:
-            break
-        time.sleep(3)
 
 
 # todo This function got bloated. Try to refactor it.
@@ -142,12 +142,9 @@ def get_hostiles_list_or_await_site_completion() -> list:
     start_time = time.time()
     while True:
         if (time.time() - start_time) > 900:
-            logging.warning('15 minutes passed, I got bored. Moving on.')
+            logging.warning('15 minutes have passed. I got bored. Moving on.')
             nm.warp_to_safe_spot()
-            time.sleep(4)
-            for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-                if not sig.check_if_in_warp():
-                    break
+            nm.wait_for_warp_to_end()
             return []
         detected_hostiles = sig.check_overview_for_hostiles()
         if detected_hostiles:
@@ -168,10 +165,7 @@ def get_hostiles_list_or_await_site_completion() -> list:
         if sig.check_if_location_secured():
             logging.info('Site capture completed. Long live the Holy Amarr!')
             nm.warp_to_safe_spot()
-            time.sleep(4)
-            for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-                if not sig.check_if_in_warp():
-                    break
+            nm.wait_for_warp_to_end()
             hf.clear_local_chat_content()
             return []
         if enemy_on_scan:
@@ -181,14 +175,23 @@ def get_hostiles_list_or_await_site_completion() -> list:
             counter += 1
 
 
+def fm_mission_plan() -> None:
+    nm.travel_to_destination_as_fleet_member()
+    cc.check_for_broadcast_and_align()
+
+    while True:
+        nm.warp_to_member_if_enemy_is_spotted()
+
+
 def main_loop() -> None:
     hf.turn_recording_on_or_off()
     time.sleep(8)
     if IS_FC:
         fc_mission_plan()
+    else:
+        fm_mission_plan()
     hf.turn_recording_on_or_off()
 
 
 if __name__ == "__main__":
-    # main_loop()
-    hf.test_check_region(OVERVIEW_REGION)
+    main_loop()

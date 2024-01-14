@@ -25,19 +25,6 @@ def check_dscan_result() -> list:
     return frigate_on_scan
 
 
-def check_for_broadcast_and_align() -> bool:
-    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    if hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, move_mouse_to_string=True):
-        pyautogui.rightClick()
-        time.sleep(0.1)
-        screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-        hf.search_for_string_in_region('lign to', SCANNER_REGION, screenshot, move_mouse_to_string=True)
-        pyautogui.click()
-        hf.clear_broadcast_history()
-        return True
-    return False
-
-
 def check_for_in_position_broadcast() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     if hf.search_for_string_in_region('position', SCANNER_REGION, screenshot):
@@ -51,6 +38,11 @@ def check_for_station_in_system() -> bool:
     if hf.search_for_string_in_region('station', OVERVIEW_REGION, screenshot):
         return True
     return False
+
+
+# to be used by fm
+def check_for_target_broadcast() -> bool:
+    pass
 
 
 def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:
@@ -89,11 +81,7 @@ def check_if_in_fleet(is_docked: bool = True) -> bool:
     return False
 
 
-def check_if_in_warp() -> bool:
-    screenshot = hf.jpg_screenshot_of_the_selected_region(CAPACITOR_REGION)
-    if hf.search_for_string_in_region('wa', CAPACITOR_REGION, screenshot):
-        return True
-    return False
+
 
 
 def check_if_location_secured() -> bool:
@@ -189,19 +177,25 @@ def check_overview_for_hostiles() -> list:
         return npc_targets
 
 
-def check_probe_scanner_for_sites_and_warp_to_70(searched_site: str) -> bool:
+def check_probe_scanner_and_try_to_activate_site(searched_site: str) -> bool:
+    logging.info("Checking for inactive sites in probe scanner.")
     select_probe_scanner()
     time.sleep(0.2)
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     site = hf.search_for_string_in_region(searched_site, SCANNER_REGION, screenshot)
     if site:
-        nm.warp_within_70_km(site, SCANNER_REGION)
-        select_directional_scanner()
-        return True
+        logging.info("Inactive site found. Activating.")
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if nm.warp_to_0(site, SCANNER_REGION):
+                time.sleep(0.1)
+                nm.stop_ship()
+                return True
+    logging.info("No inactive site found.")
     return False
 
 
 def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
+    logging.info("Making a short range 360 degree scan.")
     if initial_scan:
         select_directional_scanner()
         set_dscan_range_to_minimum()
@@ -225,10 +219,7 @@ def scan_sites_in_system(site: str) -> None:
     for target_outside_range in targets_within_and_outside_scan_range['targets_outside_scan_range']:
         nm.warp_within_70_km(hf.bounding_box_center_coordinates(target_outside_range[1][0],
                                                                 OVERVIEW_REGION), OVERVIEW_REGION)
-        time.sleep(3)
-        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-            if not check_if_in_warp():
-                break
+        nm.wait_for_warp_to_end()
         make_a_short_range_three_sixty_scan()
         time.sleep(2)
         nm.warp_to_safe_spot()

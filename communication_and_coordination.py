@@ -1,3 +1,4 @@
+import logging
 import pyautogui
 import time
 from typing import Tuple
@@ -10,9 +11,11 @@ from constants import (
 import helper_functions as hf
 import main
 import scanning_and_information_gathering as sig
+import navigation_and_movement as nm
 
 
 def await_fleet_members_to_arrive() -> None:
+    hf.beep_x_times(1)
     fleet_members_to_arrive = FLEET_MEMBERS_COUNT
     hf.select_broadcasts()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
@@ -20,14 +23,14 @@ def await_fleet_members_to_arrive() -> None:
             fleet_members_to_arrive -= 1
         if fleet_members_to_arrive == 0:
             return
-        time.sleep(2)
+        time.sleep(5)
 
 
 def await_orders() -> None:
     hf.select_fleet_tab()
     hf.select_broadcasts()
     while True:
-        if sig.check_for_broadcast_and_align():
+        if check_for_broadcast_and_align():
             break
         time.sleep(1)
 
@@ -37,6 +40,7 @@ def broadcast_align_to(target: list) -> None:
         with pyautogui.hold('v'):
             pyautogui.moveTo(target)
             pyautogui.click()
+    logging.info('Align to broadcast sent')
     hf.clear_broadcast_history()
 
 
@@ -62,26 +66,42 @@ def broadcast_destination() -> bool:
             time.sleep(0.3)
             pyautogui.click()
         hf.open_or_close_notepad()
-        print(f'Destination broadcast to {main.generic_variables.destination} sent')
+        logging.info(f"Destination broadcast to {main.generic_variables.destination} sent")
         return True
     return False
 
 
 def broadcast_enemy_spotted() -> None:
+    logging.info("Enemy was spotted.")
     pyautogui.press('z')
     hf.clear_broadcast_history()
 
 
 def broadcast_in_position() -> None:
+    logging.info("In position broadcast.")
     pyautogui.press('.')
 
 
 def broadcast_target(target_coordinates: list) -> None:
+    logging.info("Target broadcast.")
     pyautogui.moveTo(target_coordinates)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     hf.search_for_string_in_region('broadcast', OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
+
+
+def check_for_broadcast_and_align() -> bool:
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    if hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.rightClick()
+        time.sleep(0.1)
+        screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+        hf.search_for_string_in_region('lign to', SCANNER_REGION, screenshot, move_mouse_to_string=True)
+        pyautogui.click()
+        hf.clear_broadcast_history()
+        return True
+    return False
 
 
 def create_fleet_advert() -> None:
@@ -96,6 +116,7 @@ def create_fleet_advert() -> None:
     screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
     hf.search_for_string_in_region('submit', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
+    logging.info("Fleet advert created.")
 
 
 def form_fleet() -> None:
@@ -120,6 +141,7 @@ def form_fleet() -> None:
                 hf.move_mouse_away_from_overview()
     create_fleet_advert()
     hf.select_broadcasts()
+    logging.info("Fleet formed.")
 
 
 def join_existing_fleet() -> None:
@@ -143,16 +165,39 @@ def join_existing_fleet() -> None:
             screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
             hf.search_for_string_in_region('yes', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
             pyautogui.click()
-            print('fleet joined')
+            logging.info("Fleet joined.")
             return
         else:
             time.sleep(3)
 
 
-def target_broadcast_ship(region: Tuple) -> None:
+def target_broadcast_ship(region: Tuple) -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-    hf.search_for_string_in_region('target', region, screenshot, move_mouse_to_string=True)
-    for _ in range(3):
-        pyautogui.keyDown('ctrl')
-        pyautogui.click()
-        pyautogui.keyUp('ctrl')
+    if hf.search_for_string_in_region('target', region, screenshot, move_mouse_to_string=True):
+        for _ in range(3):
+            pyautogui.keyDown('ctrl')
+            pyautogui.click()
+            pyautogui.keyUp('ctrl')
+        return True
+    return False
+
+
+def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
+    broadcast_count = 0
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        if sig.check_for_in_position_broadcast():
+            broadcast_destination()
+            broadcast_count += 1
+        if broadcast_count == FLEET_MEMBERS_COUNT:
+            logging.info("All fleet members are ready. Proceeding to destination.")
+            hf.clear_broadcast_history()
+            break
+        time.sleep(3)
+
+
+def fm_warps_to_fc_and_engages_target() -> None:
+    nm.wait_for_warp_to_end()
+    nm.jump_through_acceleration_gate()
+    nm.wait_for_warp_to_end()
+
+

@@ -1,11 +1,12 @@
 import random
 import time
+import logging
 from typing import Tuple
 
 import pyautogui
 
 from constants import (
-    AMARR_SYSTEMS, DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE,
+    AMARR_SYSTEMS, DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION,
     HOME_SYSTEM, MAX_EXPECTED_TRAVEL_DISTANCE, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION,
     MINMATAR_SYSTEMS, OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION
 )
@@ -59,23 +60,25 @@ def dock_at_station() -> bool:
 
 def gtfo() -> None:
     warp_to_safe_spot()
-
-    time.sleep(4)
-    for _ in MAX_NUMBER_OF_ATTEMPTS:
-        if not sig.check_if_in_warp():
-            break
+    wait_for_warp_to_end()
     travel_home()
 
 
-def jump_through_acceleration_gate() -> None:
+def jump_through_acceleration_gate() -> bool:
+    logging.info("Attempting to jump through acceleration gate.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
-    hf.search_for_string_in_region('acceleration',
-                                   OVERVIEW_REGION,
-                                   screenshot,
-                                   move_mouse_to_string=True)
-    pyautogui.click()
-    time.sleep(0.1)
-    pyautogui.press('d')
+    if hf.search_for_string_in_region('acceleration',
+                                      OVERVIEW_REGION,
+                                      screenshot,
+                                      move_mouse_to_string=True):
+        pyautogui.click()
+        time.sleep(0.1)
+        pyautogui.press('d')
+        logging.info("Acceleration gate icon found. Jumping.")
+        return True
+    else:
+        logging.warning("Acceleration gate icon was not found.")
+        return False
 
 
 def jump_through_gate_to_destination() -> bool:
@@ -90,8 +93,10 @@ def jump_through_gate_to_destination() -> bool:
             pyautogui.click()
             pyautogui.keyUp('d')
             hf.move_mouse_away_from_overview()
+            logging.info("Gate to destination was found.")
             return True
     except pyautogui.ImageNotFoundException:
+        logging.info("Gate to destination was not found.")
         return False
 
 
@@ -183,19 +188,15 @@ def travel_home(fleet_up: bool = False) -> None:
 
 def travel_to_destination() -> None:
     for _ in range(MAX_EXPECTED_TRAVEL_DISTANCE):
+        logging.info("Attempting to find next gate to destination.")
         if not jump_through_gate_to_destination():
             hf.select_gates_only_tab()
             if not jump_through_gate_to_destination():
                 hf.select_fw_tab()
                 break
-
-        for _ in range(100):
-            time.sleep(3)
-            if not sig.check_if_in_warp():
-                hf.beep_x_times(2)
-                break
-            time.sleep(1)
+        wait_for_warp_to_end()
         time.sleep(12)
+    logging.info("Destination reached.")
     hf.notification_beep()
 
 
@@ -219,7 +220,8 @@ def travel_to_destination_as_fc() -> None:
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.select_broadcasts():
             break
-    main.wait_for_fleet_members_to_join_and_broadcast_destination()
+    hf.beep_x_times(3)
+    cc.wait_for_fleet_members_to_join_and_broadcast_destination()
     if main.generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not sig.check_if_destination_system_was_reached(main.generic_variables.destination, SCANNER_REGION):
@@ -227,10 +229,7 @@ def travel_to_destination_as_fc() -> None:
             else:
                 break
         warp_to_safe_spot()
-        time.sleep(4)
-        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-            if not sig.check_if_in_warp():
-                return
+        wait_for_warp_to_end()
 
 
 def travel_to_destination_as_fleet_member() -> None:
@@ -239,7 +238,7 @@ def travel_to_destination_as_fleet_member() -> None:
         if hf.select_broadcasts():
             break
         else:
-            print('cannot locate broadcasts')
+            logging.warning("Cannot locate broadcasts.")
             time.sleep(2)
     if sig.check_if_docked():
         undock()
@@ -258,10 +257,7 @@ def travel_to_destination_as_fleet_member() -> None:
         else:
             break
     warp_to_safe_spot()
-    time.sleep(4)
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if not sig.check_if_in_warp():
-            break
+    wait_for_warp_to_end()
     cc.broadcast_in_position()
 
 
@@ -303,6 +299,7 @@ def warp_to_scout_combat_site(region: Tuple) -> None:
 
 
 def warp_within_70_km(target: list, region: Tuple) -> bool:
+    logging.info(f"Target: {target}")
     pyautogui.moveTo(target)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
@@ -313,7 +310,7 @@ def warp_within_70_km(target: list, region: Tuple) -> bool:
                                        move_mouse_to_string=True)
         pyautogui.click()
         return True
-    elif hf.search_for_string_in_region('ithin', region, screenshot,
+    if hf.search_for_string_in_region('ithin', region, screenshot,
                                         move_mouse_to_string=True, selected_result=1):
         screenshot = hf.jpg_screenshot_of_the_selected_region(region)
         hf.search_for_string_in_region('ithin 70', region, screenshot,
@@ -321,3 +318,25 @@ def warp_within_70_km(target: list, region: Tuple) -> bool:
         pyautogui.click()
         return True
     return False
+
+
+def warp_to_0(target: list, region: Tuple) -> bool:
+    pyautogui.moveTo(target)
+    pyautogui.rightClick()
+    screenshot = hf.jpg_screenshot_of_the_selected_region(region)
+    if hf.search_for_string_in_region('warp', region, screenshot,
+                                      move_mouse_to_string=True):
+        pyautogui.click()
+        return True
+    return False
+
+
+def wait_for_warp_to_end() -> None:
+    time.sleep(4)
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        time.sleep(3)
+        screenshot = hf.jpg_screenshot_of_the_selected_region(CAPACITOR_REGION)
+        if not hf.search_for_string_in_region('wa', CAPACITOR_REGION, screenshot):
+            logging.info("Warp complete.")
+            return
+        logging.info("In warp.")
