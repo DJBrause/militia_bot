@@ -102,10 +102,12 @@ def jump_through_gate_to_destination() -> bool:
 
 def orbit_target() -> None:
     with pyautogui.hold('w'):
+
         pyautogui.click()
 
 
 def set_destination(systems: list) -> bool:
+    logging.info("Setting new destination.")
     if main.generic_variables.destination and main.generic_variables.destination in systems:
         systems.remove(main.generic_variables.destination)
     hf.select_gates_only_tab()
@@ -124,7 +126,7 @@ def set_destination(systems: list) -> bool:
         pyautogui.rightClick()
         time.sleep(0.3)
     else:
-
+        logging.error(f"Cannot set new destination. Could not find {main.generic_variables.destination}.")
         hf.open_or_close_notepad()
         return False
     screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
@@ -136,6 +138,7 @@ def set_destination(systems: list) -> bool:
         pyautogui.click()
         pyautogui.moveTo(destination_system)
     hf.open_or_close_notepad()
+    logging.info(f"New destination set: {main.generic_variables.destination}.")
     return True
 
 
@@ -300,26 +303,42 @@ def warp_to_scout_combat_site(region: Tuple) -> None:
     pyautogui.click()
 
 
-def warp_within_70_km(target: list, region: Tuple) -> bool:
+def retry_warp_to_within_70_or_0(target: list, region: Tuple, warp_to_70: bool) -> None:
+    logging.info("Retrying to warp.")
+    new_target = [target[0] + random.randint(-10, 10), target[1]]
+    if warp_to_70:
+        warp_within_70_km(new_target, region)
+        return
+
+
+def warp_within_70_km(target: list, region: Tuple, retry: bool = False) -> bool:
     logging.info("Warping within 70km.")
     pyautogui.moveTo(target)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-    if hf.search_for_string_in_region('ithin (', region, screenshot,
-                                      move_mouse_to_string=True):
+    # todo filter out entries containing 'fleet' from results instead of the second 'if' statement in this function.
+    if hf.search_for_string_in_region('p to Within (',
+                                      region, screenshot,
+                                      move_mouse_to_string=True,
+                                      selected_result=0):
         screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-        hf.search_for_string_in_region('ithin 70', region, screenshot,
+        hf.search_for_string_in_region('ithin 70',
+                                       region,
+                                       screenshot,
                                        move_mouse_to_string=True)
         pyautogui.click()
         return True
-    if hf.search_for_string_in_region('ithin', region, screenshot,
-                                        move_mouse_to_string=True, selected_result=1):
+    if hf.search_for_string_in_region('p to Within', region, screenshot, move_mouse_to_string=True, selected_result=1):
         screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-        hf.search_for_string_in_region('ithin 70', region, screenshot,
-                                       move_mouse_to_string=True)
+        hf.search_for_string_in_region('ithin 70', region, screenshot, move_mouse_to_string=True)
         pyautogui.click()
         return True
-    logging.warning(f"Something went wrong. Can't find the related string in region: {region}.")
+    logging.error(f"Can't find the 'within' string in region: {region}.")
+    if retry is False:
+        logging.info(f"Retrying warp.")
+        new_target = [target[0] + random.randint(-10, 10), target[1]]
+        warp_within_70_km(new_target, region, retry=True)
+    logging.critical("Could not warp after retry.")
     return False
 
 
@@ -331,7 +350,7 @@ def warp_to_0(target: list, region: Tuple) -> bool:
                                       move_mouse_to_string=True):
         pyautogui.click()
         return True
-    logging.warning(f"Something went wrong. Can't find the related string in region: {region}.")
+    logging.error(f"Something went wrong. Can't find the related string in region: {region}.")
     return False
 
 

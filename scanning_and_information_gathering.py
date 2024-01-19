@@ -153,6 +153,7 @@ def check_if_within_targeting_range() -> bool:
 
 
 def check_insurance(open_mail: bool = True) -> bool:
+    logging.info("Checking if ship insurance was paid out.")
     if open_mail:
         hf.open_or_close_mail()
     screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
@@ -162,8 +163,10 @@ def check_insurance(open_mail: bool = True) -> bool:
             hf.search_for_string_in_region('delete', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
             pyautogui.click()
             hf.open_or_close_mail()
+            logging.info("Insurance was paid. Ship considered to be destroyed.")
             return True
         hf.open_or_close_mail()
+        logging.info("Insurance was not paid out. Ship considered to be alive.")
         return False
     hf.search_for_string_in_region('communications', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
@@ -203,11 +206,14 @@ def check_probe_scanner_and_try_to_activate_site(searched_site: str) -> bool:
 
 
 def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
-    logging.info("Making a short range 360 degree scan.")
+    logging.info("Making a short range 360 degrees scan.")
     if initial_scan:
         select_directional_scanner()
+    if main.generic_variables.short_scan is not True:
+        logging.info("Setting scan range to minimum and scan angle to 360 degrees.")
         set_dscan_range_to_minimum()
         set_dscan_angle_to_three_sixty_degree()
+        main.generic_variables.short_scan = True
     time.sleep(4)
     # pyautogui.press('v') doesn't seem to be working here
     pyautogui.keyDown('v')
@@ -258,13 +264,16 @@ def scan_targets_within_and_outside_scan_range(scan_target: str) -> dict:
     targets_outside_scan_range = []
     hf.select_fw_tab()
     select_directional_scanner()
-    set_dscan_range_to_maximum()
-    set_dscan_angle_to_five_degree()
+    if main.generic_variables.short_scan is True:
+        logging.info("Setting scanner to long range and 5 degrees.")
+        set_dscan_range_to_maximum()
+        set_dscan_angle_to_five_degree()
+        main.generic_variables.short_scan = False
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     results = hf.ocr_reader.readtext(screenshot)
     searched_term_found = [result for result in results if scan_target.lower() in result[1].lower()]
 
-    # filtering out items with the same string that are in the same row
+    # filtering out the same strings that are in the same row
     filtered_searched_term_found = searched_term_found
 
     for i in searched_term_found:
@@ -275,8 +284,8 @@ def scan_targets_within_and_outside_scan_range(scan_target: str) -> dict:
 
     distance_in_au = [result for result in results if result[1][0].lower().isdigit()]
     distance_and_site_pairs = [(distance, site) for distance in distance_in_au for site in filtered_searched_term_found
-                               if site[0][2][1] - MAX_PIXEL_SPREAD <= distance[0][2][1] <= site[0][2][
-                                   1] + MAX_PIXEL_SPREAD]
+                               if site[0][2][1] - MAX_PIXEL_SPREAD <= distance[0][2][1] <= site[0][2][1] +
+                               MAX_PIXEL_SPREAD]
 
     for pair in distance_and_site_pairs:
         distance_str_to_float = pair[0][1].replace(',', '.')
@@ -328,6 +337,7 @@ def set_dscan_angle_to_five_degree() -> None:
     pyautogui.click()
     pyautogui.dragTo(screen_width * 0.85, y, 0.5, button='left')
     hf.move_mouse_away_from_overview()
+    main.generic_variables.short_scan = False
 
 
 def set_dscan_angle_to_three_sixty_degree() -> None:
@@ -347,6 +357,7 @@ def set_dscan_angle_to_three_sixty_degree() -> None:
     pyautogui.click()
     pyautogui.dragTo(screen_width, y, 0.5, button='left')
     hf.move_mouse_away_from_overview()
+    main.generic_variables.short_scan = True
 
 
 def set_dscan_range_to_maximum() -> bool:

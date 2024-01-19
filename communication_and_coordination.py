@@ -23,8 +23,9 @@ def await_fleet_members_to_arrive() -> None:
         if sig.check_for_in_position_broadcast():
             fleet_members_to_arrive -= 1
         if fleet_members_to_arrive == 0:
+            logging.info("All fleet members reported in position. Proceeding.")
             return
-        time.sleep(5)
+        time.sleep(10)
 
 
 def await_orders() -> None:
@@ -50,9 +51,10 @@ def broadcast_current_location() -> None:
     pyautogui.press(',')
 
 
-def broadcast_destination() -> bool:
+def broadcast_destination(retry: bool = False) -> bool:
     if main.generic_variables.destination is not None:
         hf.open_or_close_notepad()
+        time.sleep(1)
         screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
         hf.search_for_string_in_region(main.generic_variables.destination,
                                        TOP_LEFT_REGION,
@@ -68,8 +70,17 @@ def broadcast_destination() -> bool:
             time.sleep(0.3)
             pyautogui.click()
         hf.open_or_close_notepad()
-        logging.info(f"Destination broadcast to {main.generic_variables.destination} sent")
-        return True
+        time.sleep(1)
+        if hf.check_if_correct_broadcast_was_sent('travel'):
+            logging.info(f"Destination broadcast to {main.generic_variables.destination} sent")
+            return True
+        elif retry is False:
+            logging.error("Expected broadcast was not sent: Destination. Retrying...")
+            broadcast_destination(retry=True)
+        else:
+            logging.critical("Broadcast destination failed after retry.")
+            return False
+    logging.error("Destination not found. Cannot broadcast.")
     return False
 
 
@@ -145,6 +156,8 @@ def form_fleet() -> None:
                 hf.move_mouse_away_from_overview()
     create_fleet_advert()
     hf.select_broadcasts()
+    hf.clear_broadcast_history()
+    hf.move_mouse_away_from_overview()
     logging.info("Fleet formed.")
 
 
@@ -205,5 +218,3 @@ def fm_warps_to_fc_and_engages_target() -> None:
     nm.wait_for_warp_to_end()
     nm.jump_through_acceleration_gate()
     nm.wait_for_warp_to_end()
-
-

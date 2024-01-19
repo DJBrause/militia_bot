@@ -2,18 +2,18 @@ from dataclasses import dataclass
 
 import pyautogui
 import time
-
 import logging
 
 from constants import (
-    PROP_MOD, GUNS, AMARR_SYSTEMS, FLEET_MEMBERS_COUNT, IS_FC, MAX_NUMBER_OF_ATTEMPTS,
-    OVERVIEW_REGION
+    PROP_MOD, GUNS, AMARR_SYSTEMS, IS_FC, OVERVIEW_REGION, SCANNER_REGION
 )
 
 import communication_and_coordination as cc
 import helper_functions as hf
 import navigation_and_movement as nm
 import scanning_and_information_gathering as sig
+
+import atexit
 
 
 # todo killing rat at the plex
@@ -25,6 +25,7 @@ import scanning_and_information_gathering as sig
 # todo make readme
 # todo test the shit out of this project
 
+
 logging.basicConfig(filename='logfile.log',
                     level=logging.INFO,
                     filemode='w',
@@ -35,6 +36,7 @@ logging.basicConfig(filename='logfile.log',
 @dataclass
 class GenericVariables:
     unvisited_systems: list
+    short_scan: bool = None
     dscan_confidence: float = 0.65
     destination: str = ''
 
@@ -101,14 +103,17 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
 
 
 def scan_site_and_warp_to_70_if_empty(target_site: str) -> bool:
+    logging.info("Scanning site in range and warping to 70km if it is empty.")
     target_coordinates = sig.scan_sites_within_scan_range(target_site)
+    logging.info(f"{target_coordinates}")
     if target_coordinates:
         try:
-            nm.warp_within_70_km(target_coordinates, OVERVIEW_REGION)
+            nm.warp_within_70_km(target_coordinates[0], OVERVIEW_REGION)
         except pyautogui.PyAutoGUIException:
-            logging.info(f"Target coordinates: {target_coordinates}")
+            logging.info(f"Could not find site coordinates: {target_coordinates[0]}")
             return False
-        cc.broadcast_align_to(target_coordinates)
+        cc.broadcast_align_to(target_coordinates[0])
+        logging.info("Warping to the site and align to broadcast was sent.")
         return True
     return False
 
@@ -160,7 +165,6 @@ def get_hostiles_list_or_await_site_completion() -> list:
                 logging.warning(f'A ship was detected on scan: {short_range_scan_result}')
                 enemy_on_scan = True
         if sig.check_if_avoided_ship_is_on_scan_result(short_range_scan_result):
-            logging.info('A ship that is present in the avoid list was detected short scan')
             nm.warp_to_safe_spot()
             return []
         if sig.check_if_location_secured():
@@ -191,8 +195,9 @@ def main_loop() -> None:
         fc_mission_plan()
     else:
         fm_mission_plan()
-    hf.turn_recording_on_or_off()
 
 
 if __name__ == "__main__":
+    atexit.register(hf.turn_recording_on_or_off)
     main_loop()
+

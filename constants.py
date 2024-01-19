@@ -40,6 +40,7 @@ LOCAL_REGION = ast.literal_eval(os.environ.get('LOCAL_REGION'))
 TEST_REGION = ast.literal_eval(os.environ.get('TEST_REGION'))
 HOME_SYSTEM = os.environ.get('HOME')
 PC_SPECIFIC_CONFIDENCE = float(os.environ.get('PC_SPECIFIC_CONFIDENCE'))
+COORDS_AWAY_FROM_OVERVIEW = [361, 77]
 
 AMARR_FRIGATES = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer',
                   'Imperial Navy Slicer']
@@ -60,4 +61,4 @@ MINMATAR_DESTROYERS = ['Thrasher', 'Coercer', 'Svipul', 'Jackdaw', 'Hecate']
 ALL_DESTROYERS = CALDARI_DESTROYERS + GALLENTE_DESTROYERS + AMARR_DESTROYERS + MINMATAR_DESTROYERS
 AVOID = ['Slicer', 'Hookbill', 'Vigil',  'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill']
 MINMATAR_SYSTEMS = ['Kourmonen', 'Huola', 'Anka', 'Sosala']
-AMARR_SYSTEMS = ['Lamaa', 'Kamela', 'Sahtogas']
+AMARR_SYSTEMS = ['Lamaa', 'Kamela', 'Sahtogas', 'Anka']

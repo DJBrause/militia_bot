@@ -10,7 +10,7 @@ from easyocr import Reader
 
 from constants import (
     SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
-    OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB
+    OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW
 )
 
 import scanning_and_information_gathering as sig
@@ -61,6 +61,18 @@ def clear_local_chat_content() -> bool:
         return False
 
 
+def check_if_correct_broadcast_was_sent(broadcast_keyword: str) -> bool:
+    logging.info(f"Checking if broadcast keyword is present in broadcasts: {broadcast_keyword}")
+    screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    results = ocr_reader.readtext(screenshot)
+    for result in results:
+        if broadcast_keyword.lower() in result[1].lower():
+            logging.info("Broadcast was sent correctly.")
+            return True
+    logging.error(f"Broadcast keyword was not found: {broadcast_keyword}.")
+    return False
+
+
 def get_and_return_system_name(region: Tuple) -> list:
     screenshot_of_top_left_corner = jpg_screenshot_of_the_selected_region(region)
     results = ocr_reader.readtext(screenshot_of_top_left_corner)
@@ -76,8 +88,8 @@ def jpg_screenshot_of_the_selected_region(region: Tuple) -> Image:
     return screenshot_jpeg
 
 
-def move_mouse_away_from_overview() -> None:
-    pyautogui.moveTo(x=75, y=45)
+def move_mouse_away_from_overview(coords: list = COORDS_AWAY_FROM_OVERVIEW) -> None:
+    pyautogui.moveTo(coords)
 
 
 def notification_beep() -> None:
@@ -109,6 +121,12 @@ def region_selector():
             x_, y_ = pyautogui.position()
             print(f"{x}, {y}, {x_ - x}, {y_ - y}")
             beep_x_times(3)
+
+        if keyboard.is_pressed('`'):
+            x, y = pyautogui.position()
+            print(f"x: {x}, y: {y}")
+            beep_x_times(1)
+            time.sleep(1)
 
         if keyboard.is_pressed('shift'):
             beep_x_times(2)
