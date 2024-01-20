@@ -1,11 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pyautogui
 import time
 import logging
 
 from constants import (
-    PROP_MOD, GUNS, AMARR_SYSTEMS, IS_FC, OVERVIEW_REGION, SCANNER_REGION
+    PROP_MOD, GUNS, AMARR_SYSTEMS, IS_FC, OVERVIEW_REGION,
 )
 
 import communication_and_coordination as cc
@@ -35,22 +35,21 @@ logging.basicConfig(filename='logfile.log',
 
 @dataclass
 class GenericVariables:
-    unvisited_systems: list
+    unvisited_systems: list = field(default_factory=list)
     short_scan: bool = None
     dscan_confidence: float = 0.65
     destination: str = ''
 
 
-generic_variables = GenericVariables(unvisited_systems=[])
+generic_variables = GenericVariables()
 
 
 def behaviour_at_the_site() -> None:
     logging.info("Arrived at the site. Awaiting for hostiles or site completion.")
     hostiles = get_hostiles_list_or_await_site_completion()
-    if len(hostiles) > 0:
+    if hostiles:
         cc.broadcast_enemy_spotted()
-        if not target_lock_and_engage_a_hostile_ship(hostiles):
-            nm.warp_to_safe_spot()
+        target_lock_and_engage_a_hostile_ship(hostiles)
 
 
 def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
@@ -103,9 +102,8 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
 
 
 def scan_site_and_warp_to_70_if_empty(target_site: str) -> bool:
-    logging.info("Scanning site in range and warping to 70km if it is empty.")
+    logging.info("Scanned site in range and warping to 70km if it is empty.")
     target_coordinates = sig.scan_sites_within_scan_range(target_site)
-    logging.info(f"{target_coordinates}")
     if target_coordinates:
         try:
             nm.warp_within_70_km(target_coordinates[0], OVERVIEW_REGION)
@@ -115,7 +113,17 @@ def scan_site_and_warp_to_70_if_empty(target_site: str) -> bool:
         cc.broadcast_align_to(target_coordinates[0])
         logging.info("Warping to the site and align to broadcast was sent.")
         return True
+    logging.info("Scanned site is either outside scan range or is not empty.")
     return False
+
+
+def reaction_to_possible_interception() -> None:
+    logging.info("Checking for possible interception.")
+    detected_hostiles = sig.check_overview_for_hostiles()
+    if detected_hostiles:
+        logging.warning(f"Hostiles are present in the overview: {detected_hostiles}")
+        cc.broadcast_enemy_spotted()
+        target_lock_and_engage_a_hostile_ship(detected_hostiles)
 
 
 def fc_mission_plan() -> None:
@@ -125,9 +133,12 @@ def fc_mission_plan() -> None:
         if scan_site_and_warp_to_70_if_empty('scout'):
             nm.wait_for_warp_to_end()
             nm.jump_through_acceleration_gate()
-            behaviour_at_the_site()
-            if sig.check_insurance():
-                break
+            if sig.check_if_in_plex():
+                behaviour_at_the_site()
+                if sig.check_insurance():
+                    break
+            else:
+                reaction_to_possible_interception()
         else:
             if sig.check_probe_scanner_and_try_to_activate_site('scout'):
                 if scan_site_and_warp_to_70_if_empty('scout'):
@@ -200,4 +211,3 @@ def main_loop() -> None:
 if __name__ == "__main__":
     atexit.register(hf.turn_recording_on_or_off)
     main_loop()
-

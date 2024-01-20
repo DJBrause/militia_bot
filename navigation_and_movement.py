@@ -304,7 +304,7 @@ def warp_to_scout_combat_site(region: Tuple) -> None:
 
 
 def retry_warp_to_within_70_or_0(target: list, region: Tuple, warp_to_70: bool) -> None:
-    logging.info("Retrying to warp.")
+    logging.info("Retrying warp.")
     new_target = [target[0] + random.randint(-10, 10), target[1]]
     if warp_to_70:
         warp_within_70_km(new_target, region)
@@ -338,8 +338,10 @@ def warp_within_70_km(target: list, region: Tuple, retry: bool = False) -> bool:
         logging.info(f"Retrying warp.")
         new_target = [target[0] + random.randint(-10, 10), target[1]]
         warp_within_70_km(new_target, region, retry=True)
-    logging.critical("Could not warp after retry.")
-    return False
+    if retry is True:
+        logging.critical("Could not warp after retry.")
+        hf.test_check_region(OVERVIEW_REGION)
+        return False
 
 
 def warp_to_0(target: list, region: Tuple) -> bool:

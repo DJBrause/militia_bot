@@ -6,7 +6,7 @@ import pyautogui
 import pyscreeze
 
 from constants import (
-    ALL_FRIGATES, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
+    ALL_FRIGATES, ALL_DESTROYERS, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
     SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON,
     MAX_PIXEL_SPREAD, DSCAN_SLIDER
@@ -89,7 +89,14 @@ def check_if_in_fleet(is_docked: bool = True) -> bool:
     return False
 
 
-
+def check_if_in_plex() -> bool:
+    logging.info("Checking if ship is in the plex.")
+    screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if hf.search_for_string_in_region('capture', OVERVIEW_REGION, screenshot):
+        logging.info("Capture point found. Ship is in the plex.")
+        return True
+    logging.warning("Capture point not found. Ship is not in the plex.")
+    return False
 
 
 def check_if_location_secured() -> bool:
@@ -177,7 +184,7 @@ def check_overview_for_hostiles() -> list:
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     results = hf.ocr_reader.readtext(screenshot)
     targets = [(hf.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results
-               for ship in ALL_FRIGATES if target[1] == ship]
+               for ship in ALL_FRIGATES + ALL_DESTROYERS if target[1] == ship]
     if targets:
         logging.info('Targets were detected')
         return targets
@@ -239,7 +246,7 @@ def scan_sites_in_system(site: str) -> None:
         nm.warp_to_safe_spot()
 
 
-# returns coordinates of the scanned site if scan results were empty (no ship was detected in that location)
+# returns screen coordinates of the scanned site if scan results were empty (no ship was detected in that location)
 def scan_sites_within_scan_range(scanned_site_type: str) -> list:
     scan_results = scan_targets_within_and_outside_scan_range(scanned_site_type)
     if scan_results['targets_within_scan_range']:
@@ -316,8 +323,15 @@ def select_directional_scanner() -> bool:
         return False
 
 
-def select_probe_scanner() -> None:
+def select_probe_scanner() -> bool:
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    if hf.search_for_string_in_region('probe', SCANNER_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        return True
+
     pyautogui.hotkey('alt', 'p', interval=0.1)
+    if not hf.search_for_string_in_region('probe', SCANNER_REGION, screenshot, move_mouse_to_string=True):
+        return False
 
 
 def set_dscan_angle_to_five_degree() -> None:
