@@ -93,6 +93,7 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
                 pyautogui.press(GUNS)
                 time.sleep(0.1)
                 hf.target_lock()
+                time.sleep(0.1)
                 cc.broadcast_target(enemy_ship)
                 initial_loop = False
 
@@ -107,20 +108,23 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
         if not sig.check_if_target_is_locked():
             pyautogui.press(GUNS)
             time.sleep(0.1)
-            logging.info('Target lock lost.')
+            logging.info("Target lock lost.")
             target_lock_lost = True
+            pyautogui.moveTo(enemy_ship)
             hf.target_lock()
             time.sleep(1)
-            if start_time and (time.time() - start_time) > 30:
+            if start_time and (time.time() - start_time) > 180:
                 nm.warp_to_safe_spot()
                 break
         else:
+            logging.info("Target lock reacquired")
             start_time = None
             target_lock_lost = False
 
         if not enemy_ship:
             break
     nm.warp_to_safe_spot()
+    hf.clear_broadcast_history()
 
 
 def scan_site_and_warp_to_70_if_empty(site: str) -> bool:

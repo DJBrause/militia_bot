@@ -88,7 +88,6 @@ def broadcast_destination(retry: bool = False) -> bool:
 def broadcast_enemy_spotted() -> None:
     logging.info("Enemy was spotted.")
     pyautogui.press('z')
-    hf.clear_broadcast_history()
 
 
 def broadcast_in_position() -> None:
