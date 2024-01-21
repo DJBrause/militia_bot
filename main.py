@@ -5,7 +5,7 @@ import time
 import logging
 
 from constants import (
-    PROP_MOD, GUNS, AMARR_SYSTEMS, IS_FC, OVERVIEW_REGION,
+    PROP_MOD, GUNS, AMARR_SYSTEMS, IS_FC, OVERVIEW_REGION, REPAIRER
 )
 
 import communication_and_coordination as cc
@@ -39,6 +39,7 @@ class GenericVariables:
     short_scan: bool = None
     dscan_confidence: float = 0.65
     destination: str = ''
+    repairing: bool = False
 
 
 generic_variables = GenericVariables()
@@ -50,6 +51,21 @@ def behaviour_at_the_site() -> None:
     if hostiles:
         cc.broadcast_enemy_spotted()
         target_lock_and_engage_a_hostile_ship(hostiles)
+
+
+def check_health_and_decide_if_to_repair() -> None:
+    health = sig.check_ship_status()
+    try:
+        if health[1] != '100%' and generic_variables.repairing is False:
+            logging.info("Damage detected. Turning repairer on.")
+            pyautogui.press(REPAIRER)
+            generic_variables.repairing = True
+        if health[1] == '100%' and generic_variables.repairing is True:
+            logging.info("No damage detected. Turning repairer off.")
+            pyautogui.press(REPAIRER)
+            generic_variables.repairing = False
+    except IndexError as e:
+        logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")
 
 
 def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
@@ -64,28 +80,33 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
                                                     OVERVIEW_REGION,
                                                     screenshot,
                                                     move_mouse_to_string=True)
+
         if enemy_ship:
             logging.info(f'Enemy ship was detected and engaged: {enemy_ship}')
-            nm.approach()
-            time.sleep(0.1)
-            cc.broadcast_target(enemy_ship)
-
-        if initial_loop:
-            pyautogui.press(PROP_MOD)
-            hf.tackle_enemy_ship(initial_run=True)
-            pyautogui.press(GUNS)
-            for _ in range(2):
+            if initial_loop:
+                nm.approach()
+                time.sleep(0.1)
+                pyautogui.press(PROP_MOD)
+                time.sleep(0.1)
+                hf.tackle_enemy_ship(initial_run=True)
+                time.sleep(0.1)
+                pyautogui.press(GUNS)
+                time.sleep(0.1)
                 hf.target_lock()
-            time.sleep(1)
-            initial_loop = False
+                cc.broadcast_target(enemy_ship)
+                initial_loop = False
+
         time.sleep(0.3)
         hf.tackle_enemy_ship()
+
+        check_health_and_decide_if_to_repair()
 
         if target_lock_lost and start_time is None:
             start_time = time.time()
 
         if not sig.check_if_target_is_locked():
             pyautogui.press(GUNS)
+            time.sleep(0.1)
             logging.info('Target lock lost.')
             target_lock_lost = True
             hf.target_lock()
@@ -221,5 +242,7 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    atexit.register(hf.turn_recording_on_or_off)
-    main_loop()
+    # atexit.register(hf.turn_recording_on_or_off)
+    # main_loop()
+    hf.beep_x_times(1)
+    behaviour_at_the_site()
