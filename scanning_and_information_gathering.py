@@ -9,7 +9,7 @@ from constants import (
     ALL_FRIGATES, ALL_DESTROYERS, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
     SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON,
-    MAX_PIXEL_SPREAD, DSCAN_SLIDER
+    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS
 )
 
 import communication_and_coordination as cc
@@ -209,6 +209,16 @@ def check_probe_scanner_and_try_to_activate_site(searched_site: str) -> bool:
                 return True
     logging.info("No inactive site found.")
     return False
+
+
+def check_ship_status() -> list:
+    logging.info("Checking ship status.")
+    pyautogui.moveTo(SHIP_HEALTH_BARS_COORDS)
+    time.sleep(0.4)
+    screenshot = hf.jpg_screenshot_of_the_selected_region(CAPACITOR_REGION)
+    result = hf.ocr_reader.readtext(screenshot)
+    shield_armor_structure = [string[1] for string in result if '%' in string[1]]
+    return shield_armor_structure
 
 
 def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:

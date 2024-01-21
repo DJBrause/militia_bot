@@ -216,7 +216,7 @@ def travel_to_destination_as_fc() -> None:
             cc.form_fleet()
             time.sleep(0.1)
     # cannot broadcast destination while docked
-    set_destination(MINMATAR_SYSTEMS)
+    set_destination(AMARR_SYSTEMS)
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.select_fleet_tab():

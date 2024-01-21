@@ -128,6 +128,16 @@ def region_selector():
             beep_x_times(1)
             time.sleep(1)
 
+        if keyboard.is_pressed('end'):
+            x, y = pyautogui.position()
+            color = pyautogui.pixel(x, y)
+            print(f"x: {x}, y: {y}, color: {color}")
+            if color[0] >= color[1] + color[2]:
+                print("red")
+                beep_x_times(2)
+
+            time.sleep(1)
+
         if keyboard.is_pressed('shift'):
             beep_x_times(2)
             break
