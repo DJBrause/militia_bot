@@ -216,7 +216,7 @@ def travel_to_destination_as_fc() -> None:
             cc.form_fleet()
             time.sleep(0.1)
     # cannot broadcast destination while docked
-    set_destination(AMARR_SYSTEMS)
+    set_destination(MINMATAR_SYSTEMS)
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.select_fleet_tab():
@@ -224,7 +224,7 @@ def travel_to_destination_as_fc() -> None:
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.select_broadcasts():
             break
-    hf.beep_x_times(3)
+    cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
     if main.generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
@@ -274,6 +274,7 @@ def warp_to_member_if_enemy_is_spotted() -> None:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     broadcast = hf.search_for_string_in_region('spotted', SCANNER_REGION, screenshot, move_mouse_to_string=True)
     if broadcast:
+        # todo region incorrect
         warp_within_70_km(broadcast, OVERVIEW_REGION)
 
 
@@ -303,41 +304,33 @@ def warp_to_scout_combat_site(region: Tuple) -> None:
     pyautogui.click()
 
 
-def retry_warp_to_within_70_or_0(target: list, region: Tuple, warp_to_70: bool) -> None:
-    logging.info("Retrying warp.")
-    new_target = [target[0] + random.randint(-10, 10), target[1]]
-    if warp_to_70:
-        warp_within_70_km(new_target, region)
-        return
-
-
-def warp_within_70_km(target: list, region: Tuple, retry: bool = False) -> bool:
+# This won't work for warping to probe scanner items.
+def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
     logging.info("Warping within 70km.")
-    pyautogui.moveTo(target)
+    pyautogui.moveTo(coords)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-    # todo filter out entries containing 'fleet' from results instead of the second 'if' statement in this function.
-    if hf.search_for_string_in_region('p to Within (',
+
+    if hf.search_for_string_in_region('ithin',
                                       region, screenshot,
                                       move_mouse_to_string=True,
                                       selected_result=0):
+        time.sleep(0.5)
         screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-        hf.search_for_string_in_region('ithin 70',
-                                       region,
-                                       screenshot,
-                                       move_mouse_to_string=True)
-        pyautogui.click()
-        return True
-    if hf.search_for_string_in_region('p to Within', region, screenshot, move_mouse_to_string=True, selected_result=1):
-        screenshot = hf.jpg_screenshot_of_the_selected_region(region)
-        hf.search_for_string_in_region('ithin 70', region, screenshot, move_mouse_to_string=True)
-        pyautogui.click()
-        return True
-    logging.error(f"Can't find the 'within' string in region: {region}.")
+        if hf.search_for_string_in_region('ithin 70',
+                                          region,
+                                          screenshot,
+                                          move_mouse_to_string=True):
+            pyautogui.click()
+            return True
+
     if retry is False:
         logging.info(f"Retrying warp.")
-        new_target = [target[0] + random.randint(-10, 10), target[1]]
-        warp_within_70_km(new_target, region, retry=True)
+        hf.move_mouse_away_from_overview()
+        pyautogui.click()
+        new_coords = [coords[0] + random.randint(-10, 10), coords[1]]
+        warp_within_70_km(new_coords, region, retry=True)
+
     if retry is True:
         logging.critical("Could not warp after retry.")
         hf.test_check_region(OVERVIEW_REGION)
@@ -345,6 +338,7 @@ def warp_within_70_km(target: list, region: Tuple, retry: bool = False) -> bool:
 
 
 def warp_to_0(target: list, region: Tuple) -> bool:
+    logging.info("Warping to 0.")
     pyautogui.moveTo(target)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)

@@ -16,10 +16,11 @@ import navigation_and_movement as nm
 
 def await_fleet_members_to_arrive() -> None:
     logging.info("Waiting for all fleet members to arrive at destination.")
-    hf.beep_x_times(1)
+    broadcast_hold_position()
     fleet_members_to_arrive = FLEET_MEMBERS_COUNT
     hf.select_broadcasts()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        logging.info(f"Number of fleet members to report in: {fleet_members_to_arrive}")
         if sig.check_for_in_position_broadcast():
             fleet_members_to_arrive -= 1
         if fleet_members_to_arrive == 0:
@@ -91,8 +92,14 @@ def broadcast_enemy_spotted() -> None:
 
 
 def broadcast_in_position() -> None:
-    logging.info("In position broadcast.")
+    logging.info("In position broadcast sent.")
     pyautogui.press('.')
+
+
+def broadcast_hold_position() -> None:
+    logging.info("Hold position broadcast sent.")
+    with pyautogui.hold('ctrl'):
+        pyautogui.press('.')
 
 
 def broadcast_target(target_coordinates: list) -> None:

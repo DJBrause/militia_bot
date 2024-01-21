@@ -27,7 +27,7 @@ def check_dscan_result() -> list:
 
 def check_for_in_position_broadcast() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    if hf.search_for_string_in_region('position', SCANNER_REGION, screenshot):
+    if hf.search_for_string_in_region('in position', SCANNER_REGION, screenshot):
         hf.clear_broadcast_history()
         return True
     return False
@@ -47,7 +47,6 @@ def check_for_target_broadcast() -> bool:
 
 def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:
     avoided_ship_on_scan = [ship for ship in scan_result for avoided_ship in AVOID if ship == avoided_ship]
-    print(avoided_ship_on_scan)
     if len(avoided_ship_on_scan) > 0:
         logging.info("Detected ship is present on avoidance list.")
         return True
@@ -231,10 +230,10 @@ def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
 
 
 def scan_sites_in_system(site: str) -> None:
-    targets_within_and_outside_scan_range = scan_targets_within_and_outside_scan_range(site)
+    targets_within_and_outside_scan_range = get_sites_within_and_outside_scan_range(site)
 
     for target_within_range in targets_within_and_outside_scan_range['targets_within_scan_range']:
-        scan_target_within_range(target_within_range)
+        scan_sites_within_range(target_within_range)
         time.sleep(5)
 
     for target_outside_range in targets_within_and_outside_scan_range['targets_outside_scan_range']:
@@ -248,16 +247,16 @@ def scan_sites_in_system(site: str) -> None:
 
 # returns screen coordinates of the scanned site if scan results were empty (no ship was detected in that location)
 def scan_sites_within_scan_range(scanned_site_type: str) -> list:
-    scan_results = scan_targets_within_and_outside_scan_range(scanned_site_type)
-    if scan_results['targets_within_scan_range']:
+    scan_results = get_sites_within_and_outside_scan_range(scanned_site_type)
+    if scan_results['sites_within_scan_range']:
         target_coordinates = [hf.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION) for target in
-                              scan_results['targets_within_scan_range'] if len(scan_target_within_range(target)) == 0]
+                              scan_results['sites_within_scan_range'] if len(scan_sites_within_range(target)) == 0]
         return target_coordinates
     return []
 
 
-def scan_target_within_range(target: list) -> list:
-    pyautogui.moveTo(hf.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION))
+def scan_sites_within_range(sites: list) -> list:
+    pyautogui.moveTo(hf.bounding_box_center_coordinates(sites[1][0], OVERVIEW_REGION))
     pyautogui.keyDown('v')
     pyautogui.click()
     pyautogui.keyUp('v')
@@ -265,10 +264,10 @@ def scan_target_within_range(target: list) -> list:
     return scan_result
 
 
-def scan_targets_within_and_outside_scan_range(scan_target: str) -> dict:
-    targets_within_and_outside_scan_range = {'targets_within_scan_range': [], 'targets_outside_scan_range': []}
-    targets_within_scan_range = []
-    targets_outside_scan_range = []
+def get_sites_within_and_outside_scan_range(site: str) -> dict:
+    sites_within_and_outside_scan_range = {'sites_within_scan_range': [], 'sites_outside_scan_range': []}
+    sites_within_scan_range = []
+    sites_outside_scan_range = []
     hf.select_fw_tab()
     select_directional_scanner()
     if main.generic_variables.short_scan is True:
@@ -278,7 +277,7 @@ def scan_targets_within_and_outside_scan_range(scan_target: str) -> dict:
         main.generic_variables.short_scan = False
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     results = hf.ocr_reader.readtext(screenshot)
-    searched_term_found = [result for result in results if scan_target.lower() in result[1].lower()]
+    searched_term_found = [result for result in results if site.lower() in result[1].lower()]
 
     # filtering out the same strings that are in the same row
     filtered_searched_term_found = searched_term_found
@@ -296,20 +295,21 @@ def scan_targets_within_and_outside_scan_range(scan_target: str) -> dict:
 
     for pair in distance_and_site_pairs:
         distance_str_to_float = pair[0][1].replace(',', '.')
-        if 'AU' in distance_str_to_float:
-            distance_str_to_float = float(distance_str_to_float[:-3])
-        else:
-            distance_str_to_float = float(distance_str_to_float)
         try:
-            if distance_str_to_float <= 14.3:
-                targets_within_scan_range.append(pair)
+            if 'AU' in distance_str_to_float:
+                distance_str_to_float = float(distance_str_to_float[:-3])
             else:
-                targets_outside_scan_range.append(pair)
+                distance_str_to_float = float(distance_str_to_float)
+
+            if distance_str_to_float <= 14.3:
+                sites_within_scan_range.append(pair)
+            else:
+                sites_outside_scan_range.append(pair)
         except ValueError:
-            targets_outside_scan_range.append(pair)
-    targets_within_and_outside_scan_range['targets_within_scan_range'] = targets_within_scan_range
-    targets_within_and_outside_scan_range['targets_outside_scan_range'] = targets_outside_scan_range
-    return targets_within_and_outside_scan_range
+            sites_outside_scan_range.append(pair)
+    sites_within_and_outside_scan_range['sites_within_scan_range'] = sites_within_scan_range
+    sites_within_and_outside_scan_range['sites_outside_scan_range'] = sites_outside_scan_range
+    return sites_within_and_outside_scan_range
 
 
 def select_directional_scanner() -> bool:

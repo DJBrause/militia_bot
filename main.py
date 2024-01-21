@@ -99,19 +99,20 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
 
         if not enemy_ship:
             break
+    nm.warp_to_safe_spot()
 
 
-def scan_site_and_warp_to_70_if_empty(target_site: str) -> bool:
-    logging.info("Scanned site in range and warping to 70km if it is empty.")
-    target_coordinates = sig.scan_sites_within_scan_range(target_site)
-    if target_coordinates:
+def scan_site_and_warp_to_70_if_empty(site: str) -> bool:
+    logging.info("Scanning site in range and warping to 70km if it is empty.")
+    coordinates = sig.scan_sites_within_scan_range(site)
+    if coordinates:
         try:
-            nm.warp_within_70_km(target_coordinates[0], OVERVIEW_REGION)
+            nm.warp_within_70_km(coordinates[0], OVERVIEW_REGION)
         except pyautogui.PyAutoGUIException:
-            logging.info(f"Could not find site coordinates: {target_coordinates[0]}")
+            logging.info(f"Could not find site coordinates: {coordinates[0]}")
             return False
-        cc.broadcast_align_to(target_coordinates[0])
-        logging.info("Warping to the site and align to broadcast was sent.")
+        cc.broadcast_align_to(coordinates[0])
+        logging.info("Warping to the site and align broadcast was sent.")
         return True
     logging.info("Scanned site is either outside scan range or is not empty.")
     return False
@@ -124,6 +125,20 @@ def reaction_to_possible_interception() -> None:
         logging.warning(f"Hostiles are present in the overview: {detected_hostiles}")
         cc.broadcast_enemy_spotted()
         target_lock_and_engage_a_hostile_ship(detected_hostiles)
+    nm.warp_to_safe_spot()
+
+
+def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
+    if wait_for_warp_to_end:
+        time.sleep(4)
+        nm.wait_for_warp_to_end()
+    nm.jump_through_acceleration_gate()
+    time.sleep(4)
+    nm.wait_for_warp_to_end()
+    if sig.check_if_in_plex():
+        behaviour_at_the_site()
+    else:
+        reaction_to_possible_interception()
 
 
 def fc_mission_plan() -> None:
@@ -131,22 +146,19 @@ def fc_mission_plan() -> None:
         nm.travel_to_destination_as_fc()
         cc.await_fleet_members_to_arrive()
         if scan_site_and_warp_to_70_if_empty('scout'):
-            nm.wait_for_warp_to_end()
-            nm.jump_through_acceleration_gate()
-            if sig.check_if_in_plex():
-                behaviour_at_the_site()
-                if sig.check_insurance():
-                    break
-            else:
-                reaction_to_possible_interception()
+            engage_site_protocol()
+        elif sig.check_probe_scanner_and_try_to_activate_site('scout'):
+            if scan_site_and_warp_to_70_if_empty('scout'):
+                engage_site_protocol()
         else:
-            if sig.check_probe_scanner_and_try_to_activate_site('scout'):
-                if scan_site_and_warp_to_70_if_empty('scout'):
-                    nm.wait_for_warp_to_end()
-                    nm.jump_through_acceleration_gate()
-                    behaviour_at_the_site()
-                    if sig.check_insurance():
-                        break
+            sites = sig.get_sites_within_and_outside_scan_range('scout')
+            bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][1][0], OVERVIEW_REGION)
+            nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
+            time.sleep(4)
+            nm.wait_for_warp_to_end()
+            if not sig.make_a_short_range_three_sixty_scan():
+                engage_site_protocol(wait_for_warp_to_end=False)
+
     nm.travel_home()
 
 
