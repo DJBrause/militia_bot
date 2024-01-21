@@ -221,8 +221,5 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main_loop()
-    hf.beep_x_times(1)
-    print(sig.check_ship_status())
-    hf.beep_x_times(2)
+    atexit.register(hf.turn_recording_on_or_off)
+    main_loop()
