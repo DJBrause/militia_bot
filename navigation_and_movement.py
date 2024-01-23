@@ -28,6 +28,15 @@ def approach() -> None:
         pyautogui.click()
 
 
+def approach_capture_point() -> None:
+    screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    hf.search_for_string_in_region('capture',
+                                   OVERVIEW_REGION,
+                                   screenshot,
+                                   move_mouse_to_string=True)
+    approach()
+
+
 def choose_system_to_travel_to(systems: list) -> str:
     if len(main.generic_variables.unvisited_systems) == 0:
         random_system = random.choice(systems)

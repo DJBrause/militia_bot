@@ -46,11 +46,56 @@ generic_variables = GenericVariables()
 
 
 def behaviour_at_the_site() -> None:
-    logging.info("Arrived at the site. Awaiting for hostiles or site completion.")
-    hostiles = get_hostiles_list_or_await_site_completion()
-    if hostiles:
-        cc.broadcast_enemy_spotted()
-        target_lock_and_engage_a_hostile_ship(hostiles)
+    logging.info("Awaiting for hostiles or site completion.")
+    start_time = time.time()
+    initial_scan = True
+    enemy_on_scan = False
+    short_range_scan_result = None
+    counter = 0
+    while True:
+        if (time.time() - start_time) > 900:
+            logging.warning("15 minutes have passed. I got bored. Moving on.")
+            nm.warp_to_safe_spot()
+            nm.wait_for_warp_to_end()
+            break
+
+        if sig.check_if_location_secured():
+            logging.info("Site capture completed. Long live the Holy Amarr!")
+            break
+
+        detected_hostiles = sig.check_overview_for_hostiles()
+        if detected_hostiles:
+            logging.warning(f"Hostiles are present in the overview: {detected_hostiles}")
+            cc.broadcast_enemy_spotted()
+            target_lock_and_engage_a_hostile_ship(detected_hostiles)
+
+        if initial_scan:
+            logging.info("Scanning for enemy in short range.")
+            short_range_scan_result = sig.make_a_short_range_three_sixty_scan()
+            initial_scan = False
+
+        elif not enemy_on_scan:
+            short_range_scan_result = sig.make_a_short_range_three_sixty_scan(False)
+            if short_range_scan_result:
+                logging.warning(f"A ship was detected on scan: {short_range_scan_result}")
+                enemy_on_scan = True
+
+        if sig.check_if_avoided_ship_is_on_scan_result(short_range_scan_result):
+            logging.info("Running away from the avoided ship.")
+            nm.warp_to_safe_spot()
+            break
+
+        if enemy_on_scan:
+            if counter >= 20:
+                logging.info("No enemy ship jumped in. Resuming scanning.")
+                enemy_on_scan = False
+                counter = 0
+            counter += 1
+
+    nm.warp_to_safe_spot()
+    time.sleep(4)
+    nm.wait_for_warp_to_end()
+    hf.clear_local_chat_content()
 
 
 def check_health_and_decide_if_to_repair() -> None:
@@ -82,7 +127,7 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
                                                     move_mouse_to_string=True)
 
         if enemy_ship:
-            logging.info(f'Enemy ship was detected and engaged: {enemy_ship}')
+            logging.info(f"Enemy ship was detected and engaged: {enemy_ship}")
             if initial_loop:
                 nm.approach()
                 time.sleep(0.1)
@@ -113,18 +158,20 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
             pyautogui.moveTo(enemy_ship)
             hf.target_lock()
             time.sleep(1)
-            if start_time and (time.time() - start_time) > 180:
+            if start_time and (time.time() - start_time) > 60:
                 nm.warp_to_safe_spot()
                 break
         else:
-            logging.info("Target lock reacquired")
+            logging.info("Target is locked.")
             start_time = None
             target_lock_lost = False
 
         if not enemy_ship:
+            logging.info("No enemy ship found. Resuming mission plan.")
+            pyautogui.press(PROP_MOD)
+            time.sleep(0.1)
+            nm.approach_capture_point()
             break
-    nm.warp_to_safe_spot()
-    hf.clear_broadcast_history()
 
 
 def scan_site_and_warp_to_70_if_empty(site: str) -> bool:
@@ -187,51 +234,9 @@ def fc_mission_plan() -> None:
     nm.travel_home()
 
 
-# todo This function got bloated. Try to refactor it.
-def get_hostiles_list_or_await_site_completion() -> list:
-    initial_scan = True
-    enemy_on_scan = False
-    short_range_scan_result = []
-    counter = 0
-    start_time = time.time()
-    while True:
-        if (time.time() - start_time) > 900:
-            logging.warning('15 minutes have passed. I got bored. Moving on.')
-            nm.warp_to_safe_spot()
-            nm.wait_for_warp_to_end()
-            return []
-        detected_hostiles = sig.check_overview_for_hostiles()
-        if detected_hostiles:
-            logging.warning(f'Hostiles are present in the overview: {detected_hostiles}')
-            return detected_hostiles
-        if initial_scan:
-            short_range_scan_result = sig.make_a_short_range_three_sixty_scan()
-            initial_scan = False
-        elif not enemy_on_scan:
-            short_range_scan_result = sig.make_a_short_range_three_sixty_scan(False)
-            if short_range_scan_result:
-                logging.warning(f'A ship was detected on scan: {short_range_scan_result}')
-                enemy_on_scan = True
-        if sig.check_if_avoided_ship_is_on_scan_result(short_range_scan_result):
-            nm.warp_to_safe_spot()
-            return []
-        if sig.check_if_location_secured():
-            logging.info('Site capture completed. Long live the Holy Amarr!')
-            nm.warp_to_safe_spot()
-            nm.wait_for_warp_to_end()
-            hf.clear_local_chat_content()
-            return []
-        if enemy_on_scan:
-            if counter >= 30:
-                enemy_on_scan = False
-                counter = 0
-            counter += 1
-
-
 def fm_mission_plan() -> None:
     nm.travel_to_destination_as_fleet_member()
     cc.check_for_broadcast_and_align()
-
     while True:
         nm.warp_to_member_if_enemy_is_spotted()
 
@@ -246,7 +251,5 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main_loop()
-    hf.beep_x_times(1)
-    behaviour_at_the_site()
+    atexit.register(hf.turn_recording_on_or_off)
+    main_loop()

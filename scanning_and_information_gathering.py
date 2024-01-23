@@ -21,7 +21,7 @@ import navigation_and_movement as nm
 def check_dscan_result() -> list:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     results = hf.ocr_reader.readtext(screenshot)
-    frigate_on_scan = [f for f in ALL_FRIGATES for r in results if f == r[1]]
+    frigate_on_scan = [f for f in ALL_FRIGATES for r in results if f.lower() == r[1].lower()]
     return frigate_on_scan
 
 
@@ -50,7 +50,6 @@ def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:
     if len(avoided_ship_on_scan) > 0:
         logging.info("Detected ship is present on avoidance list.")
         return True
-    logging.info("Detected ship is not present on avoidance list.")
     return False
 
 
@@ -235,6 +234,7 @@ def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
     pyautogui.keyDown('v')
     time.sleep(0.1)
     pyautogui.keyUp('v')
+    time.sleep(0.1)
     result = check_dscan_result()
     return result
 
@@ -243,6 +243,9 @@ def scan_sites_in_system(site: str) -> None:
     targets_within_and_outside_scan_range = get_sites_within_and_outside_scan_range(site)
 
     for target_within_range in targets_within_and_outside_scan_range['targets_within_scan_range']:
+        set_dscan_range_to_maximum()
+        time.sleep(0.1)
+        set_dscan_angle_to_five_degree()
         scan_sites_within_range(target_within_range)
         time.sleep(5)
 
@@ -280,7 +283,7 @@ def get_sites_within_and_outside_scan_range(site: str) -> dict:
     sites_outside_scan_range = []
     hf.select_fw_tab()
     select_directional_scanner()
-    if main.generic_variables.short_scan is True:
+    if main.generic_variables.short_scan is True or main.generic_variables.short_scan is None:
         logging.info("Setting scanner to long range and 5 degrees.")
         set_dscan_range_to_maximum()
         set_dscan_angle_to_five_degree()

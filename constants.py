@@ -46,7 +46,7 @@ COORDS_AWAY_FROM_OVERVIEW = [361, 77]
 
 AMARR_FRIGATES = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer',
                   'Imperial Navy Slicer']
-CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill',
+CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill', 'Griffin Navy Issue',
                     'Caldari Navy Hookbill']
 GALLENTE_FRIGATES = ['Atron', 'Navitas', 'Tristan', 'Incursus', 'Maulus', 'Imicus', 'Comet']
 MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Reaper', 'Firetail', 'Vigil',
@@ -62,5 +62,5 @@ AMARR_DESTROYERS = ['Coercer', 'Dragoon', 'Heretic', 'Confessor', 'Sunesis']
 MINMATAR_DESTROYERS = ['Thrasher', 'Coercer', 'Svipul', 'Jackdaw', 'Hecate']
 ALL_DESTROYERS = CALDARI_DESTROYERS + GALLENTE_DESTROYERS + AMARR_DESTROYERS + MINMATAR_DESTROYERS
 AVOID = ['Slicer', 'Hookbill', 'Vigil',  'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill']
-MINMATAR_SYSTEMS = ['Kourmonen', 'Huola', 'Sosala']
-AMARR_SYSTEMS = ['Lamaa', 'Kamela', 'Anka']
+MINMATAR_SYSTEMS = ['Oyeman'] #['Kourmonen', 'Huola', 'Sosala']
+AMARR_SYSTEMS = ['Anka'] #['Lamaa', 'Kamela', 'Anka']
