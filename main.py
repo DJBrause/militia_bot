@@ -5,16 +5,16 @@ import time
 import logging
 
 from constants import (
-    PROP_MOD, GUNS, AMARR_SYSTEMS, IS_FC, OVERVIEW_REGION, REPAIRER
+    PROP_MOD, GUNS, IS_FC, OVERVIEW_REGION, REPAIRER, SYSTEMS_TO_TRAVEL_TO
 )
 
 import communication_and_coordination as cc
 import helper_functions as hf
 import navigation_and_movement as nm
 import scanning_and_information_gathering as sig
+import tests as test
 
 import atexit
-
 
 # todo killing rat at the plex
 # todo GTFO if conditions are unfavorable
@@ -46,15 +46,21 @@ generic_variables = GenericVariables()
 
 
 def behaviour_at_the_site() -> None:
-    logging.info("Awaiting for hostiles or site completion.")
+    logging.info("Awaiting site completion while checking if enemy is present.")
     start_time = time.time()
     initial_scan = True
     enemy_on_scan = False
     short_range_scan_result = None
     counter = 0
     while True:
+        detected_hostiles = sig.check_overview_for_hostiles()
+        if detected_hostiles:
+            logging.info(f"Hostiles are present in the overview: {detected_hostiles}")
+            cc.broadcast_enemy_spotted()
+            engagement_protocol()
+
         if (time.time() - start_time) > 900:
-            logging.warning("15 minutes have passed. I got bored. Moving on.")
+            logging.info("15 minutes have passed. I got bored. Moving on.")
             nm.warp_to_safe_spot()
             nm.wait_for_warp_to_end()
             break
@@ -62,12 +68,6 @@ def behaviour_at_the_site() -> None:
         if sig.check_if_location_secured():
             logging.info("Site capture completed. Long live the Holy Amarr!")
             break
-
-        detected_hostiles = sig.check_overview_for_hostiles()
-        if detected_hostiles:
-            logging.warning(f"Hostiles are present in the overview: {detected_hostiles}")
-            cc.broadcast_enemy_spotted()
-            target_lock_and_engage_a_hostile_ship(detected_hostiles)
 
         if initial_scan:
             logging.info("Scanning for enemy in short range.")
@@ -98,37 +98,18 @@ def behaviour_at_the_site() -> None:
     hf.clear_local_chat_content()
 
 
-def check_health_and_decide_if_to_repair() -> None:
-    health = sig.check_ship_status()
-    try:
-        if health[1] != '100%' and generic_variables.repairing is False:
-            logging.info("Damage detected. Turning repairer on.")
-            pyautogui.press(REPAIRER)
-            generic_variables.repairing = True
-        if health[1] == '100%' and generic_variables.repairing is True:
-            logging.info("No damage detected. Turning repairer off.")
-            pyautogui.press(REPAIRER)
-            generic_variables.repairing = False
-    except IndexError as e:
-        logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")
-
-
-def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
-    default_hostile_ship = hostiles[0]
-    engagement_is_on = True
-    initial_loop = True
+def engagement_protocol() -> None:
+    enemy_selected = False
     start_time = None
     target_lock_lost = False
-    while engagement_is_on:
-        screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
-        enemy_ship = hf.search_for_string_in_region(default_hostile_ship[1],
-                                                    OVERVIEW_REGION,
-                                                    screenshot,
-                                                    move_mouse_to_string=True)
-
-        if enemy_ship:
-            logging.info(f"Enemy ship was detected and engaged: {enemy_ship}")
-            if initial_loop:
+    while True:
+        enemy = hf.extract_pilot_names_and_ship_types_from_screenshot()
+        if enemy:
+            if enemy_selected is False:
+                logging.info(f"Enemy ship was detected and engaged: {enemy[0][0], enemy[0][1][1]}")
+                pyautogui.moveTo(hf.bounding_box_center_coordinates(enemy[0][1][0], OVERVIEW_REGION))
+                pyautogui.click()
+                hf.move_mouse_away_from_overview()
                 nm.approach()
                 time.sleep(0.1)
                 pyautogui.press(PROP_MOD)
@@ -139,13 +120,16 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
                 time.sleep(0.1)
                 hf.target_lock()
                 time.sleep(0.1)
-                cc.broadcast_target(enemy_ship)
-                initial_loop = False
+                cc.broadcast_target(hf.bounding_box_center_coordinates(enemy[0][1][0], OVERVIEW_REGION))
+                time.sleep(0.1)
+                hf.launch_drones()
+            if test.test_if_target_in_selected_items(enemy[0][0]):
+                enemy_selected = True
+            else:
+                enemy_selected = False
 
-        time.sleep(0.3)
         hf.tackle_enemy_ship()
-
-        check_health_and_decide_if_to_repair()
+        sig.check_health_and_decide_if_to_repair()
 
         if target_lock_lost and start_time is None:
             start_time = time.time()
@@ -155,7 +139,7 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
             time.sleep(0.1)
             logging.info("Target lock lost.")
             target_lock_lost = True
-            pyautogui.moveTo(enemy_ship)
+            pyautogui.moveTo(enemy)
             hf.target_lock()
             time.sleep(1)
             if start_time and (time.time() - start_time) > 60:
@@ -163,12 +147,15 @@ def target_lock_and_engage_a_hostile_ship(hostiles: list) -> None:
                 break
         else:
             logging.info("Target is locked.")
+            hf.order_drones_to_engage()
             start_time = None
             target_lock_lost = False
 
-        if not enemy_ship:
+        if not enemy:
             logging.info("No enemy ship found. Resuming mission plan.")
             pyautogui.press(PROP_MOD)
+            time.sleep(0.1)
+            hf.return_drones_to_bay()
             time.sleep(0.1)
             nm.approach_capture_point()
             break
@@ -194,13 +181,14 @@ def reaction_to_possible_interception() -> None:
     logging.info("Checking for possible interception.")
     detected_hostiles = sig.check_overview_for_hostiles()
     if detected_hostiles:
-        logging.warning(f"Hostiles are present in the overview: {detected_hostiles}")
+        logging.info(f"Hostiles are present in the overview: {detected_hostiles}")
         cc.broadcast_enemy_spotted()
-        target_lock_and_engage_a_hostile_ship(detected_hostiles)
+        engagement_protocol()
     nm.warp_to_safe_spot()
 
 
 def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
+    # Decides whether jump through acceleration gate was successfull or intercepted and act accordingly.
     if wait_for_warp_to_end:
         time.sleep(4)
         nm.wait_for_warp_to_end()
@@ -214,7 +202,7 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
 
 
 def fc_mission_plan() -> None:
-    for _ in range(len(AMARR_SYSTEMS)):
+    for _ in range(len(SYSTEMS_TO_TRAVEL_TO)):
         nm.travel_to_destination_as_fc()
         cc.await_fleet_members_to_arrive()
         if scan_site_and_warp_to_70_if_empty('scout'):
@@ -232,6 +220,7 @@ def fc_mission_plan() -> None:
                 engage_site_protocol(wait_for_warp_to_end=False)
 
     nm.travel_home()
+    logging.info("Mission plan ended.")
 
 
 def fm_mission_plan() -> None:
@@ -251,5 +240,8 @@ def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    atexit.register(hf.turn_recording_on_or_off)
-    main_loop()
+    # atexit.register(hf.turn_recording_on_or_off)
+    # main_loop()
+    hf.beep_x_times(1)
+    # behaviour_at_the_site()
+    engagement_protocol()

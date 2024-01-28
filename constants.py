@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FLEET_MEMBERS_COUNT = 1
+FLEET_MEMBERS_COUNT = 0
 MAX_NUMBER_OF_ATTEMPTS = 30
 IS_FC = True
 DEFAULT_CONFIDENCE = 0.9
@@ -17,8 +17,9 @@ REPAIRER = 'f5'
 SHIP_HEALTH_BARS_COORDS = [1706, 1298]
 MAX_SCAN_RANGE = 14.3
 MAX_PIXEL_SPREAD = 5
-SCRAMBLER_EQUIPPED = True
-WEBIFIER_EQUIPPED = True
+SCRAMBLER_EQUIPPED = False
+WEBIFIER_EQUIPPED = False
+DRONES_EQUIPPED = False
 
 UNLOCK_TARGET_ICON = 'images/unlock_icon.PNG'
 CANNOT_LOCK_ICON = 'images/cannot_lock.PNG'
@@ -44,23 +45,31 @@ HOME_SYSTEM = os.environ.get('HOME')
 PC_SPECIFIC_CONFIDENCE = float(os.environ.get('PC_SPECIFIC_CONFIDENCE'))
 COORDS_AWAY_FROM_OVERVIEW = [361, 77]
 
-AMARR_FRIGATES = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor', 'Slicer',
-                  'Imperial Navy Slicer']
-CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Hookbill', 'Griffin Navy Issue',
-                    'Caldari Navy Hookbill']
-GALLENTE_FRIGATES = ['Atron', 'Navitas', 'Tristan', 'Incursus', 'Maulus', 'Imicus', 'Comet']
-MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Reaper', 'Firetail', 'Vigil',
-                     'Vigil Fleet Issue']
+AMARR_FRIGATES = ['Executioner', 'Inquisitor', 'Crucifier', 'Punisher', 'Magnate', 'Tormentor',
+                  'Imperial Navy Slicer', 'Crucifier Navy Issue', 'Magnate Navy Issue']
+CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron', 'Griffin Navy Issue',
+                    'Caldari Navy Hookbill', 'Heron Navy Issue']
+GALLENTE_FRIGATES = ['Atron', 'Navitas', 'Tristan', 'Incursus', 'Maulus', 'Imicus', 'Federation Navy Comet',
+                     'Maulus Navy Issue', 'Imicus Navy Issue']
+MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Reaper', 'Republic Fleet Firetail', 'Vigil',
+                     'Vigil Fleet Issue', 'Probe Fleet Issue']
 ROOKIE_SHIPS = ['Ibis', 'Reaper', 'Impairor', 'Velator']
 MINER_FRIGATE = ['Venture']
-NPC_MINMATAR = 'Minmatar Frigate'
-NPC_AMARR = 'Amarr Frigate'
+NPC_MINMATAR = ['Republic Frigate']
+NPC_AMARR = ['Imperial Frigate']
+CAPSULE = ['Capsule']
 ALL_FRIGATES = AMARR_FRIGATES + CALDARI_FRIGATES + GALLENTE_FRIGATES + MINMATAR_FRIGATES + ROOKIE_SHIPS + MINER_FRIGATE
-CALDARI_DESTROYERS = ['Cormorant', 'Corax', 'Flycatcher', 'Jackdaw', 'Svipul']
-GALLENTE_DESTROYERS = ['Algos', 'Catalyst', 'Dragoon', 'Magus', 'Hecate']
-AMARR_DESTROYERS = ['Coercer', 'Dragoon', 'Heretic', 'Confessor', 'Sunesis']
-MINMATAR_DESTROYERS = ['Thrasher', 'Coercer', 'Svipul', 'Jackdaw', 'Hecate']
+CALDARI_DESTROYERS = ['Cormorant', 'Corax', 'Flycatcher', 'Jackdaw', 'Cormorant Navy Issue']
+GALLENTE_DESTROYERS = ['Algos', 'Catalyst', 'Dragoon', 'Magus', 'Hecate', 'Catalyst Navy Issue']
+AMARR_DESTROYERS = ['Coercer', 'Dragoon', 'Heretic', 'Confessor', 'Sunesis', 'Coercer Navy Issue']
+MINMATAR_DESTROYERS = ['Thrasher', 'Talwar', 'Svipul', 'Thrasher Fleet Issue']
 ALL_DESTROYERS = CALDARI_DESTROYERS + GALLENTE_DESTROYERS + AMARR_DESTROYERS + MINMATAR_DESTROYERS
+AMARR_T1_CRUISERS = ["Augoror", "Maller", "Omen", "Tormentor", "Arbitrator"]
+CALDARI_T1_CRUISERS = ["Blackbird", "Caracal", "Moa", "Osprey"]
+GALLENTE_T1_CRUISERS = ["Celestis", "Exequror", "Thorax", "Vexor"]
+MINMATAR_T1_CRUISERS = ["Bellicose", "Rupture", "Scythe", "Stabber"]
+T1_CRUISERS = AMARR_T1_CRUISERS + CALDARI_T1_CRUISERS + GALLENTE_T1_CRUISERS + MINMATAR_T1_CRUISERS
 AVOID = ['Slicer', 'Hookbill', 'Vigil',  'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill']
-MINMATAR_SYSTEMS = ['Oyeman'] #['Kourmonen', 'Huola', 'Sosala']
-AMARR_SYSTEMS = ['Anka'] #['Lamaa', 'Kamela', 'Anka']
+MINMATAR_SYSTEMS = ['Kourmonen', 'Huola', 'Sosala']
+AMARR_SYSTEMS = ['Lamaa', 'Kamela', 'Anka']
+SYSTEMS_TO_TRAVEL_TO = MINMATAR_SYSTEMS

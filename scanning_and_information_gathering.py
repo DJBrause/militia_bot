@@ -9,7 +9,7 @@ from constants import (
     ALL_FRIGATES, ALL_DESTROYERS, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
     SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON,
-    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS
+    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER
 )
 
 import communication_and_coordination as cc
@@ -18,14 +18,16 @@ import main
 import navigation_and_movement as nm
 
 
-def check_dscan_result() -> list:
+def get_dscan_result() -> list:
+    # Check if any frigate is present in the directional scanner readout.
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     results = hf.ocr_reader.readtext(screenshot)
     frigate_on_scan = [f for f in ALL_FRIGATES for r in results if f.lower() == r[1].lower()]
     return frigate_on_scan
 
 
-def check_for_in_position_broadcast() -> bool:
+def test_in_position_broadcast() -> bool:
+    # Checks if the 'in position' string is present in the SCANNER_REGION.
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     if hf.search_for_string_in_region('in position', SCANNER_REGION, screenshot):
         hf.clear_broadcast_history()
@@ -33,7 +35,7 @@ def check_for_in_position_broadcast() -> bool:
     return False
 
 
-def check_for_station_in_system() -> bool:
+def test_if_station_in_system() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     if hf.search_for_string_in_region('station', OVERVIEW_REGION, screenshot):
         return True
@@ -179,18 +181,11 @@ def check_insurance(open_mail: bool = True) -> bool:
 
 
 def check_overview_for_hostiles() -> list:
-    screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
-    results = hf.ocr_reader.readtext(screenshot)
-    targets = [(hf.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results
-               for ship in ALL_FRIGATES + ALL_DESTROYERS if target[1] == ship]
+    targets = hf.extract_pilot_names_and_ship_types_from_screenshot()
     if targets:
-        logging.info('Targets were detected')
+        logging.info('A target was detected in the overview.')
         return targets
-    npc_targets = [(hf.bounding_box_center_coordinates(target[0], OVERVIEW_REGION), target[1]) for target in results if
-                   target[1] == NPC_MINMATAR]
-    if npc_targets:
-        logging.info('NPC targets were detected')
-        return npc_targets
+    logging.info("No target detected in the overview.")
 
 
 def check_probe_scanner_and_try_to_activate_site(searched_site: str) -> bool:
@@ -235,7 +230,7 @@ def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
     time.sleep(0.1)
     pyautogui.keyUp('v')
     time.sleep(0.1)
-    result = check_dscan_result()
+    result = get_dscan_result()
     return result
 
 
@@ -261,6 +256,7 @@ def scan_sites_in_system(site: str) -> None:
 # returns screen coordinates of the scanned site if scan results were empty (no ship was detected in that location)
 def scan_sites_within_scan_range(scanned_site_type: str) -> list:
     scan_results = get_sites_within_and_outside_scan_range(scanned_site_type)
+    time.sleep(0.2)
     if scan_results['sites_within_scan_range']:
         target_coordinates = [hf.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION) for target in
                               scan_results['sites_within_scan_range'] if len(scan_sites_within_range(target)) == 0]
@@ -273,7 +269,7 @@ def scan_sites_within_range(sites: list) -> list:
     pyautogui.keyDown('v')
     pyautogui.click()
     pyautogui.keyUp('v')
-    scan_result = check_dscan_result()
+    scan_result = get_dscan_result()
     return scan_result
 
 
@@ -427,3 +423,18 @@ def set_dscan_range_to_minimum() -> None:
     pyautogui.click()
     pyautogui.dragTo(screen_width * 0.80, y, 0.5, button='left')
     hf.move_mouse_away_from_overview()
+
+
+def check_health_and_decide_if_to_repair() -> None:
+    health = check_ship_status()
+    try:
+        if health[1] != '100%' and main.generic_variables.repairing is False:
+            logging.info("Damage detected. Turning repairer on.")
+            pyautogui.press(REPAIRER)
+            main.generic_variables.repairing = True
+        if health[1] == '100%' and main.generic_variables.repairing is True:
+            logging.info("No damage detected. Turning repairer off.")
+            pyautogui.press(REPAIRER)
+            main.generic_variables.repairing = False
+    except IndexError as e:
+        logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")

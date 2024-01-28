@@ -21,7 +21,7 @@ def await_fleet_members_to_arrive() -> None:
     hf.select_broadcasts()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         logging.info(f"Number of fleet members to report in: {fleet_members_to_arrive}")
-        if sig.check_for_in_position_broadcast():
+        if sig.test_in_position_broadcast():
             fleet_members_to_arrive -= 1
         if fleet_members_to_arrive == 0:
             logging.info("All fleet members reported in position. Proceeding.")
@@ -210,7 +210,7 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     logging.info("Awaiting 'in position' broadcast from all fleet members.")
     broadcast_count = 0
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if sig.check_for_in_position_broadcast():
+        if sig.test_in_position_broadcast():
             broadcast_destination()
             broadcast_count += 1
         if broadcast_count == FLEET_MEMBERS_COUNT:

@@ -6,9 +6,9 @@ from typing import Tuple
 import pyautogui
 
 from constants import (
-    AMARR_SYSTEMS, DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION,
+    DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION,
     HOME_SYSTEM, MAX_EXPECTED_TRAVEL_DISTANCE, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION,
-    MINMATAR_SYSTEMS, OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION
+    OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION, SYSTEMS_TO_TRAVEL_TO
 )
 
 import communication_and_coordination as cc
@@ -24,8 +24,7 @@ def align_to(target: list) -> None:
 
 
 def approach() -> None:
-    with pyautogui.hold('q'):
-        pyautogui.click()
+    pyautogui.press('q')
 
 
 def approach_capture_point() -> None:
@@ -154,7 +153,7 @@ def set_destination(systems: list) -> bool:
 def set_destination_from_broadcast() -> bool:
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-        for system in MINMATAR_SYSTEMS:
+        for system in SYSTEMS_TO_TRAVEL_TO:
             if hf.search_for_string_in_region(system, SCANNER_REGION, screenshot, move_mouse_to_string=True):
                 main.generic_variables.destination = system
                 pyautogui.rightClick()
@@ -225,7 +224,7 @@ def travel_to_destination_as_fc() -> None:
             cc.form_fleet()
             time.sleep(0.1)
     # cannot broadcast destination while docked
-    set_destination(AMARR_SYSTEMS)
+    set_destination(SYSTEMS_TO_TRAVEL_TO)
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.select_fleet_tab():

@@ -1,16 +1,19 @@
-import time
 import keyboard
 import winsound
 import logging
 import pyautogui
+from easyocr import Reader
+
 import io
 from PIL import Image
-from typing import List, Tuple, Union
-from easyocr import Reader
+import re
+import time
+from typing import List, Tuple, Union, Any
 
 from constants import (
     SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
-    OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW
+    OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
+    MAX_PIXEL_SPREAD, NPC_MINMATAR
 )
 
 import scanning_and_information_gathering as sig
@@ -61,6 +64,25 @@ def clear_local_chat_content() -> bool:
         return False
 
 
+def extract_pilot_names_and_ship_types_from_screenshot() -> list[tuple[str, Any]]:
+    # Takes a screenshot of the overview region and returns a list of tuples containing the pilot's name and
+    # the type of ship they are flying along with ship type's bounding box coordinates.
+    try:
+        screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+        output = ocr_reader.readtext(screenshot)
+        sorted_output = sorted(output, key=lambda x: x[0][1][1])
+        name_column_x_coordinate = [entry[0][0][0] for entry in sorted_output if entry[1] == 'Name'][0]
+        name_and_ship_type_pair = [(clean_up_spaces(name[1]), ship_type[:2]) for ship_type in sorted_output
+                                   if ship_type[1] in ALL_FRIGATES + ALL_DESTROYERS + NPC_MINMATAR
+                                   for name in sorted_output if name_column_x_coordinate - MAX_PIXEL_SPREAD
+                                   <= name[0][0][0] <= name_column_x_coordinate + MAX_PIXEL_SPREAD and
+                                   ship_type[0][0][1] - MAX_PIXEL_SPREAD <= name[0][0][1] <=
+                                   ship_type[0][0][1] + MAX_PIXEL_SPREAD]
+        return name_and_ship_type_pair
+    except Exception as e:
+        logging.error(f"{e}")
+
+
 def check_if_correct_broadcast_was_sent(broadcast_keyword: str) -> bool:
     logging.info(f"Checking if broadcast keyword is present in broadcasts: {broadcast_keyword}")
     screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
@@ -71,6 +93,12 @@ def check_if_correct_broadcast_was_sent(broadcast_keyword: str) -> bool:
             return True
     logging.error(f"Broadcast keyword was not found: {broadcast_keyword}.")
     return False
+
+
+def clean_up_spaces(input_string: str) -> str:
+    # Replaces multiple consecutive spaces with a single space.
+    cleaned_string = re.sub(r'\s+', ' ', input_string.strip())
+    return cleaned_string
 
 
 def get_and_return_system_name(region: Tuple) -> list:
@@ -213,10 +241,16 @@ def target_lock() -> None:
         pyautogui.click()
 
 
-def test_check_region(region: Tuple) -> list:
-    overview_and_selected_item_screenshot = jpg_screenshot_of_the_selected_region(region)
-    test_result = ocr_reader.readtext(overview_and_selected_item_screenshot)
-    return test_result
+def launch_drones() -> None:
+    pyautogui.hotkey('ctrl', 'f', interval=0.1)
+
+
+def order_drones_to_engage() -> None:
+    pyautogui.press('f')
+
+
+def return_drones_to_bay() -> None:
+    pyautogui.hotkey('ctrl', 'r', interval=0.1)
 
 
 def turn_recording_on_or_off() -> None:
