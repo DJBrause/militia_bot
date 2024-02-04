@@ -13,7 +13,7 @@ from typing import List, Tuple, Union, Any
 from constants import (
     SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
-    MAX_PIXEL_SPREAD, NPC_MINMATAR
+    MAX_PIXEL_SPREAD, NPC_MINMATAR, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE
 )
 
 import scanning_and_information_gathering as sig
@@ -61,6 +61,7 @@ def clear_local_chat_content() -> bool:
             return True
         return False
     except pyautogui.ImageNotFoundException:
+        logging.error("Could not find MORE_ICON")
         return False
 
 
@@ -72,15 +73,20 @@ def extract_pilot_names_and_ship_types_from_screenshot() -> list[tuple[str, Any]
         output = ocr_reader.readtext(screenshot)
         sorted_output = sorted(output, key=lambda x: x[0][1][1])
         name_column_x_coordinate = [entry[0][0][0] for entry in sorted_output if entry[1] == 'Name'][0]
+        logging.debug(f"sorted_output = {sorted_output}")
         name_and_ship_type_pair = [(clean_up_spaces(name[1]), ship_type[:2]) for ship_type in sorted_output
-                                   if ship_type[1] in ALL_FRIGATES + ALL_DESTROYERS + NPC_MINMATAR
+                                   if ship_type[1] in ALL_FRIGATES + ALL_DESTROYERS
                                    for name in sorted_output if name_column_x_coordinate - MAX_PIXEL_SPREAD
                                    <= name[0][0][0] <= name_column_x_coordinate + MAX_PIXEL_SPREAD and
                                    ship_type[0][0][1] - MAX_PIXEL_SPREAD <= name[0][0][1] <=
                                    ship_type[0][0][1] + MAX_PIXEL_SPREAD]
         return name_and_ship_type_pair
-    except Exception as e:
-        logging.error(f"{e}")
+    except IndexError:
+        logging.error("Index error in extract_pilot_names_and_ship_types_from_screenshot. "
+                      "Attempting to fix the issue by switching tabs.")
+        select_gates_only_tab()
+        time.sleep(0.1)
+        select_fw_tab()
 
 
 def check_if_correct_broadcast_was_sent(broadcast_keyword: str) -> bool:
@@ -224,6 +230,10 @@ def select_gates_only_tab() -> None:
     pyautogui.click()
 
 
+def remove_graphics() -> None:
+    pyautogui.hotkey('ctrl', 'shift', 'f9', interval=0.1)
+
+
 def tackle_enemy_ship(initial_run: bool = False) -> None:
     if initial_run:
         if SCRAMBLER_EQUIPPED:
@@ -236,9 +246,48 @@ def tackle_enemy_ship(initial_run: bool = False) -> None:
         pyautogui.press(WEB)
 
 
-def target_lock() -> None:
+def target_lock_using_overview(target_name: str) -> bool:
+    logging.info("Attempting to lock target using overview.")
     with pyautogui.hold('ctrl'):
         pyautogui.click()
+    for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
+        logging.info(f"Checking if lock is complete. Current attempt: {attempt + 1}")
+        if sig.check_if_target_is_locked():
+            return True
+        screenshot = jpg_screenshot_of_the_selected_region(SELECTED_ITEM_REGION)
+        if not search_for_string_in_region(target_name, SELECTED_ITEM_REGION, screenshot):
+            logging.info("Target is no longer present in selected item window.")
+            return False
+    logging.info(f"Could not lock the target after {MAX_NUMBER_OF_ATTEMPTS} attempts.")
+    return False
+
+
+def target_lock_using_selected_item(target_name: str) -> bool:
+    logging.info("Attempting to lock target using Selected Item window.")
+    try:
+        if not sig.check_if_target_is_locked():
+            x_, y_ = pyautogui.locateCenterOnScreen(LOCK_TARGET_ICON,
+                                                    confidence=PC_SPECIFIC_CONFIDENCE,
+                                                    region=SELECTED_ITEM_REGION)
+            time.sleep(0.1)
+            pyautogui.moveTo(x_, y_)
+            time.sleep(0.1)
+            pyautogui.click()
+            time.sleep(0.1)
+            move_mouse_away_from_overview()
+            for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
+                logging.info(f"Checking if lock is complete. Current attempt: {attempt+1}")
+                if sig.check_if_target_is_locked():
+                    return True
+                screenshot = jpg_screenshot_of_the_selected_region(SELECTED_ITEM_REGION)
+                if not search_for_string_in_region(target_name, SELECTED_ITEM_REGION, screenshot):
+                    logging.info("Target is no longer present in selected item window.")
+                    return False
+            logging.info(f"Could not lock the target after {MAX_NUMBER_OF_ATTEMPTS} attempts.")
+            return False
+    except pyautogui.ImageNotFoundException:
+        logging.error("Image related to target_lock_using_selected_item function not found.")
+        return False
 
 
 def launch_drones() -> None:
@@ -255,3 +304,7 @@ def return_drones_to_bay() -> None:
 
 def turn_recording_on_or_off() -> None:
     pyautogui.hotkey('alt', 'f9', interval=0.1)
+
+
+def unlock_target() -> None:
+    pyautogui.hotkey('ctrl', 'shift', interval=0.1)

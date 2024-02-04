@@ -15,6 +15,7 @@ import communication_and_coordination as cc
 import helper_functions as hf
 import main
 import scanning_and_information_gathering as sig
+import tests as test
 
 
 def align_to(target: list) -> None:
@@ -24,16 +25,25 @@ def align_to(target: list) -> None:
 
 
 def approach() -> None:
-    pyautogui.press('q')
+    logging.info("Approaching target.")
+    pyautogui.keyDown('q')
+    time.sleep(0.1)
+    pyautogui.keyUp('q')
 
 
 def approach_capture_point() -> None:
+    logging.info("Approaching capture point.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     hf.search_for_string_in_region('capture',
                                    OVERVIEW_REGION,
                                    screenshot,
-                                   move_mouse_to_string=True)
+                                   move_mouse_to_string=True,
+                                   )
+    time.sleep(0.1)
+    pyautogui.click()
+    time.sleep(0.1)
     approach()
+    hf.move_mouse_away_from_overview()
 
 
 def choose_system_to_travel_to(systems: list) -> str:
@@ -81,8 +91,14 @@ def jump_through_acceleration_gate() -> bool:
                                       move_mouse_to_string=True):
         pyautogui.click()
         time.sleep(0.1)
-        pyautogui.press('d')
+        pyautogui.keyDown('d')
+        time.sleep(0.1)
+        pyautogui.keyUp('d')
         logging.info("Acceleration gate icon found. Jumping.")
+        time.sleep(0.1)
+        hf.move_mouse_away_from_overview()
+        time.sleep(0.1)
+        pyautogui.click()
         return True
     else:
         logging.warning("Acceleration gate icon was not found.")
@@ -296,10 +312,9 @@ def warp_to_safe_spot() -> None:
     pyautogui.click()
     time.sleep(0.1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-    for _ in range(5):
-        hf.search_for_string_in_region('spo', TOP_LEFT_REGION, screenshot, move_mouse_to_string=True)
-        pyautogui.click()
-        break
+    hf.search_for_string_in_region('spo', TOP_LEFT_REGION, screenshot, move_mouse_to_string=True)
+    pyautogui.click()
+
 
 
 def warp_to_scout_combat_site(region: Tuple) -> None:
@@ -330,6 +345,8 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
                                           screenshot,
                                           move_mouse_to_string=True):
             pyautogui.click()
+            time.sleep(0.1)
+            hf.move_mouse_away_from_overview()
             return True
 
     if retry is False:
@@ -341,7 +358,7 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
 
     if retry is True:
         logging.critical("Could not warp after retry.")
-        hf.test_check_region(OVERVIEW_REGION)
+        test.test_check_region(OVERVIEW_REGION)
         return False
 
 
@@ -366,4 +383,5 @@ def wait_for_warp_to_end() -> None:
         if not hf.search_for_string_in_region('wa', CAPACITOR_REGION, screenshot):
             logging.info("Warp complete.")
             return
+        main.generic_variables.prop_module_on = False
         logging.info("In warp.")

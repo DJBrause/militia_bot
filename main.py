@@ -4,8 +4,10 @@ import pyautogui
 import time
 import logging
 
+import tests
 from constants import (
-    PROP_MOD, GUNS, IS_FC, OVERVIEW_REGION, REPAIRER, SYSTEMS_TO_TRAVEL_TO
+    PROP_MOD, GUNS, IS_FC, OVERVIEW_REGION, SYSTEMS_TO_TRAVEL_TO, REPAIRER_EQUIPPED,
+    MAX_NUMBER_OF_ATTEMPTS, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, RAT_ICON, DEFAULT_CONFIDENCE, SCANNER_REGION
 )
 
 import communication_and_coordination as cc
@@ -27,7 +29,7 @@ import atexit
 
 
 logging.basicConfig(filename='logfile.log',
-                    level=logging.INFO,
+                    level=logging.DEBUG,
                     filemode='w',
                     encoding='utf-8',
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -40,6 +42,9 @@ class GenericVariables:
     dscan_confidence: float = 0.65
     destination: str = ''
     repairing: bool = False
+    guns_activated: bool = False
+    prop_module_on: bool = False
+    graphics_removed: bool = False
 
 
 generic_variables = GenericVariables()
@@ -53,28 +58,44 @@ def behaviour_at_the_site() -> None:
     short_range_scan_result = None
     counter = 0
     while True:
-        detected_hostiles = sig.check_overview_for_hostiles()
-        if detected_hostiles:
-            logging.info(f"Hostiles are present in the overview: {detected_hostiles}")
-            cc.broadcast_enemy_spotted()
-            engagement_protocol()
+        time.sleep(0.1)
+        while True:
+            detected_hostiles = sig.check_overview_for_hostiles()
+            if detected_hostiles:
+                logging.info(f"Hostiles are present in the overview: {detected_hostiles}")
 
-        if (time.time() - start_time) > 900:
-            logging.info("15 minutes have passed. I got bored. Moving on.")
-            nm.warp_to_safe_spot()
-            nm.wait_for_warp_to_end()
-            break
+                if not generic_variables.graphics_removed:
+                    logging.info("Removing graphics for the time of engagement")
+                    hf.remove_graphics()
+                    generic_variables.graphics_removed = True
 
-        if sig.check_if_location_secured():
-            logging.info("Site capture completed. Long live the Holy Amarr!")
-            break
+                primary_target = detected_hostiles[0][0]
+
+                if engagement_protocol(primary_target):
+                    cc.broadcast_enemy_spotted()
+                    maintain_engagement(primary_target)
+            else:
+                break
+
+        rat = sig.check_overview_for_rats()
+        if rat:
+            reaction_to_rat_presence(rat)
+
+        if generic_variables.graphics_removed:
+            logging.info("No rat or hostile present. Restoring graphics.")
+            hf.remove_graphics()
+            generic_variables.graphics_removed = False
 
         if initial_scan:
-            logging.info("Scanning for enemy in short range.")
+            logging.info("Making a short range scan.")
             short_range_scan_result = sig.make_a_short_range_three_sixty_scan()
+            if short_range_scan_result:
+                logging.warning(f"A ship was detected on scan: {short_range_scan_result}")
+                enemy_on_scan = True
             initial_scan = False
 
         elif not enemy_on_scan:
+            logging.info("Making a short range scan.")
             short_range_scan_result = sig.make_a_short_range_three_sixty_scan(False)
             if short_range_scan_result:
                 logging.warning(f"A ship was detected on scan: {short_range_scan_result}")
@@ -82,7 +103,6 @@ def behaviour_at_the_site() -> None:
 
         if sig.check_if_avoided_ship_is_on_scan_result(short_range_scan_result):
             logging.info("Running away from the avoided ship.")
-            nm.warp_to_safe_spot()
             break
 
         if enemy_on_scan:
@@ -92,78 +112,129 @@ def behaviour_at_the_site() -> None:
                 counter = 0
             counter += 1
 
+        nm.approach_capture_point()
+
+        if sig.check_if_location_secured():
+            logging.info("Site capture completed. Long live the Holy Amarr!")
+            break
+
+        if (time.time() - start_time) > 900:
+            logging.info("15 minutes have passed. I got bored. Moving on.")
+            nm.warp_to_safe_spot()
+            nm.wait_for_warp_to_end()
+            break
+
     nm.warp_to_safe_spot()
-    time.sleep(4)
     nm.wait_for_warp_to_end()
     hf.clear_local_chat_content()
 
 
-def engagement_protocol() -> None:
-    enemy_selected = False
-    start_time = None
-    target_lock_lost = False
-    while True:
-        enemy = hf.extract_pilot_names_and_ship_types_from_screenshot()
-        if enemy:
-            if enemy_selected is False:
-                logging.info(f"Enemy ship was detected and engaged: {enemy[0][0], enemy[0][1][1]}")
-                pyautogui.moveTo(hf.bounding_box_center_coordinates(enemy[0][1][0], OVERVIEW_REGION))
-                pyautogui.click()
-                hf.move_mouse_away_from_overview()
-                nm.approach()
+def reaction_to_rat_presence(rat):
+    logging.info(f"Rat is present in the overview: {rat}")
+    if not generic_variables.graphics_removed:
+        logging.info("Removing graphics for the time of engagement")
+        hf.remove_graphics()
+        generic_variables.graphics_removed = True
+    if engagement_protocol(rat):
+        maintain_engagement(rat)
+
+
+def attempt_to_select_the_enemy(name: str) -> bool:
+    logging.info(f"Attempting to select: {name}")
+    hf.move_mouse_away_from_overview()
+    screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if hf.search_for_string_in_region(name, OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        time.sleep(0.1)
+        if test.test_if_target_in_selected_items(name):
+            nm.approach()
+            if not generic_variables.prop_module_on:
                 time.sleep(0.1)
                 pyautogui.press(PROP_MOD)
-                time.sleep(0.1)
-                hf.tackle_enemy_ship(initial_run=True)
-                time.sleep(0.1)
-                pyautogui.press(GUNS)
-                time.sleep(0.1)
-                hf.target_lock()
-                time.sleep(0.1)
-                cc.broadcast_target(hf.bounding_box_center_coordinates(enemy[0][1][0], OVERVIEW_REGION))
-                time.sleep(0.1)
-                hf.launch_drones()
-            if test.test_if_target_in_selected_items(enemy[0][0]):
-                enemy_selected = True
-            else:
-                enemy_selected = False
-
-        hf.tackle_enemy_ship()
-        sig.check_health_and_decide_if_to_repair()
-
-        if target_lock_lost and start_time is None:
-            start_time = time.time()
-
-        if not sig.check_if_target_is_locked():
-            pyautogui.press(GUNS)
+                generic_variables.prop_module_on = True
             time.sleep(0.1)
-            logging.info("Target lock lost.")
-            target_lock_lost = True
-            pyautogui.moveTo(enemy)
-            hf.target_lock()
-            time.sleep(1)
-            if start_time and (time.time() - start_time) > 60:
-                nm.warp_to_safe_spot()
-                break
+            hf.move_mouse_away_from_overview()
+            return True
+    else:
+        logging.info("Enemy is no longer present in the overview.")
+        return False
+
+
+def attempt_to_target_lock_the_enemy(name: str) -> bool:
+    logging.info(f"Attempting to acquire target lock on: {name}")
+    if not hf.target_lock_using_selected_item(name):
+        new_screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+        if hf.search_for_string_in_region(name, OVERVIEW_REGION, new_screenshot, move_mouse_to_string=True):
+            if hf.target_lock_using_overview(name):
+                hf.move_mouse_away_from_overview()
+                return True
+            hf.move_mouse_away_from_overview()
+            return False
         else:
-            logging.info("Target is locked.")
-            hf.order_drones_to_engage()
-            start_time = None
-            target_lock_lost = False
-
-        if not enemy:
-            logging.info("No enemy ship found. Resuming mission plan.")
-            pyautogui.press(PROP_MOD)
-            time.sleep(0.1)
-            hf.return_drones_to_bay()
-            time.sleep(0.1)
-            nm.approach_capture_point()
-            break
+            logging.info("Enemy is no longer present in the overview.")
+            return False
+    return True
 
 
-def scan_site_and_warp_to_70_if_empty(site: str) -> bool:
+def engagement_protocol(name: str) -> bool:
+    logging.info("Engagement protocol is active.")
+    if attempt_to_select_the_enemy(name):
+        if not attempt_to_target_lock_the_enemy(name):
+            return False
+        hf.tackle_enemy_ship(initial_run=True)
+        time.sleep(0.1)
+        pyautogui.press(GUNS)
+        time.sleep(0.1)
+        return True
+    else:
+        return False
+
+
+def maintain_engagement(name: str) -> None:
+    logging.info("Maintaining engagement.")
+    while True:
+        if sig.check_if_target_is_locked():
+            handle_locked_target()
+        else:
+            if not handle_unlocked_target(name):
+                return
+        if REPAIRER_EQUIPPED:
+            sig.check_health_and_decide_if_to_repair()
+
+
+def handle_locked_target() -> None:
+    logging.info("Handling a locked target.")
+    nm.approach()
+    time.sleep(0.1)
+    hf.tackle_enemy_ship()
+
+
+def handle_unlocked_target(name: str) -> bool:
+    logging.info("Handling an unlocked target.")
+    if test.test_if_target_in_selected_items(name):
+        handle_locked_target()
+        attempt_to_target_lock_the_enemy(name)
+        return True
+    else:
+        if handle_enemy_selection(name):
+            return True
+        return False
+
+
+def handle_enemy_selection(name: str) -> bool:
+    updated_enemy_and_ship_type_pairs = hf.extract_pilot_names_and_ship_types_from_screenshot()
+    if updated_enemy_and_ship_type_pairs and name in updated_enemy_and_ship_type_pairs[0][0]:
+        attempt_to_select_the_enemy(name)
+        return True
+    return False
+
+
+def scan_site_and_warp_to_70_if_empty(site_type: str) -> bool:
     logging.info("Scanning site in range and warping to 70km if it is empty.")
-    coordinates = sig.scan_sites_within_scan_range(site)
+    sites = sig.get_sites_within_and_outside_scan_range(site_type)
+    coordinates = []
+    if sites:
+        coordinates = sig.scan_sites_within_scan_range(sites['sites_within_scan_range'])
     if coordinates:
         try:
             nm.warp_within_70_km(coordinates[0], OVERVIEW_REGION)
@@ -179,26 +250,26 @@ def scan_site_and_warp_to_70_if_empty(site: str) -> bool:
 
 def reaction_to_possible_interception() -> None:
     logging.info("Checking for possible interception.")
-    detected_hostiles = sig.check_overview_for_hostiles()
-    if detected_hostiles:
-        logging.info(f"Hostiles are present in the overview: {detected_hostiles}")
+    hostiles = sig.check_overview_for_hostiles()
+    if hostiles:
+        logging.info(f"Hostiles are present in the overview: {hostiles}")
         cc.broadcast_enemy_spotted()
-        engagement_protocol()
+        if engagement_protocol(hostiles[0][0]):
+            maintain_engagement(hostiles[0][0])
     nm.warp_to_safe_spot()
 
 
 def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
-    # Decides whether jump through acceleration gate was successfull or intercepted and act accordingly.
+    # Decides whether jump through acceleration gate was successful or intercepted and act accordingly.
     if wait_for_warp_to_end:
-        time.sleep(4)
         nm.wait_for_warp_to_end()
     nm.jump_through_acceleration_gate()
-    time.sleep(4)
     nm.wait_for_warp_to_end()
-    if sig.check_if_in_plex():
-        behaviour_at_the_site()
-    else:
-        reaction_to_possible_interception()
+    hf.move_mouse_away_from_overview()
+
+    behaviour_at_the_site()
+    # else:
+    #     reaction_to_possible_interception()
 
 
 def fc_mission_plan() -> None:
@@ -212,12 +283,14 @@ def fc_mission_plan() -> None:
                 engage_site_protocol()
         else:
             sites = sig.get_sites_within_and_outside_scan_range('scout')
-            bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][1][0], OVERVIEW_REGION)
-            nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
-            time.sleep(4)
-            nm.wait_for_warp_to_end()
-            if not sig.make_a_short_range_three_sixty_scan():
-                engage_site_protocol(wait_for_warp_to_end=False)
+            if sites['sites_outside_scan_range']:
+                bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][1][0],
+                                                                  OVERVIEW_REGION)
+                nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
+                time.sleep(4)
+                nm.wait_for_warp_to_end()
+                if not sig.make_a_short_range_three_sixty_scan():
+                    engage_site_protocol(wait_for_warp_to_end=False)
 
     nm.travel_home()
     logging.info("Mission plan ended.")
@@ -239,9 +312,23 @@ def main_loop() -> None:
         fm_mission_plan()
 
 
+def set_correct_confidence():
+    for min_confidence_level in range(100, -1, -1):
+        try:
+            x, y = pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON,
+                                                  grayscale=False,
+                                                  confidence=min_confidence_level / 10,
+                                                  region=SELECTED_ITEM_REGION)
+            pyautogui.moveTo(x, y)
+
+            return min_confidence_level
+        except pyautogui.ImageNotFoundException:
+            pass
+
+    return None
+
+
 if __name__ == "__main__":
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main_loop()
     hf.beep_x_times(1)
-    # behaviour_at_the_site()
-    engagement_protocol()
+    atexit.register(hf.turn_recording_on_or_off)
+    main_loop()

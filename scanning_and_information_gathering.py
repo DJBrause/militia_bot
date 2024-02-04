@@ -1,6 +1,7 @@
 import time
 from typing import Tuple
 import logging
+import os
 
 import pyautogui
 import pyscreeze
@@ -8,8 +9,8 @@ import pyscreeze
 from constants import (
     ALL_FRIGATES, ALL_DESTROYERS, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
-    SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON,
-    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER
+    SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON, WEBIFIER_ON_ICON_SMALL,
+    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER, SCRAMBLER_ON_ICON_SMALL, RAT_ICON
 )
 
 import communication_and_coordination as cc
@@ -22,7 +23,7 @@ def get_dscan_result() -> list:
     # Check if any frigate is present in the directional scanner readout.
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     results = hf.ocr_reader.readtext(screenshot)
-    frigate_on_scan = [f for f in ALL_FRIGATES for r in results if f.lower() == r[1].lower()]
+    frigate_on_scan = [f for f in ALL_FRIGATES for r in results if f == r[1]]
     return frigate_on_scan
 
 
@@ -101,31 +102,38 @@ def check_if_in_plex() -> bool:
 
 def check_if_location_secured() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(LOCAL_REGION)
+    if hf.search_for_string_in_region('captured', LOCAL_REGION, screenshot):
+        return True
     if hf.search_for_string_in_region('secure', LOCAL_REGION, screenshot):
         return True
     return False
 
 
 def check_if_scrambler_is_operating() -> bool:
+    time.sleep(0.1)
     try:
         if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON, grayscale=False, confidence=DEFAULT_CONFIDENCE,
                                           region=TARGETS_REGION):
             return True
-        return False
     except pyautogui.ImageNotFoundException:
-        pass
+        try:
+            if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON_SMALL, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+                                              region=TARGETS_REGION):
+                return True
+        except pyautogui.ImageNotFoundException:
+            return False
 
 
 def check_if_target_is_locked() -> bool:
     try:
-        unlock_target_icon_present = pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON,
-                                                                    grayscale=False,
-                                                                    confidence=DEFAULT_CONFIDENCE,
-                                                                    region=SELECTED_ITEM_REGION)
-        if unlock_target_icon_present is not None:
-            pyautogui.moveTo(unlock_target_icon_present)
+        if pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON,
+                                          grayscale=False,
+                                          confidence=DEFAULT_CONFIDENCE,
+                                          region=SELECTED_ITEM_REGION):
+            logging.info("Target is locked.")
             return True
     except pyautogui.ImageNotFoundException:
+        logging.info("Target is not locked.")
         return False
 
 
@@ -141,12 +149,18 @@ def check_if_target_is_outside_range() -> bool:
 
 
 def check_if_webifier_is_operating() -> bool:
+    time.sleep(0.1)
     try:
         if pyautogui.locateCenterOnScreen(WEBIFIER_ON_ICON, grayscale=False, confidence=DEFAULT_CONFIDENCE,
                                           region=TARGETS_REGION):
             return True
     except pyautogui.ImageNotFoundException:
-        return False
+        try:
+            if pyautogui.locateCenterOnScreen(WEBIFIER_ON_ICON_SMALL, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+                                              region=TARGETS_REGION):
+                return True
+        except pyautogui.ImageNotFoundException:
+            return False
 
 
 def check_if_within_targeting_range() -> bool:
@@ -183,9 +197,25 @@ def check_insurance(open_mail: bool = True) -> bool:
 def check_overview_for_hostiles() -> list:
     targets = hf.extract_pilot_names_and_ship_types_from_screenshot()
     if targets:
-        logging.info('A target was detected in the overview.')
+        logging.info(f"A target was detected in the overview: {targets[0][0], targets[0][1][1]}.")
         return targets
     logging.info("No target detected in the overview.")
+
+
+def check_overview_for_rats() -> str:
+    logging.info("Checking overview for rats.")
+    screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    for word in NPC_MINMATAR:
+        if hf.search_for_string_in_region(word, OVERVIEW_REGION, screenshot):
+            return NPC_MINMATAR[0]
+    try:
+        if pyautogui.locateOnScreen(RAT_ICON,
+                                    grayscale=False,
+                                    confidence=DEFAULT_CONFIDENCE,
+                                    region=OVERVIEW_REGION):
+            return NPC_MINMATAR[0]
+    except pyautogui.ImageNotFoundException:
+        logging.info("Rat was not found in the overview.")
 
 
 def check_probe_scanner_and_try_to_activate_site(searched_site: str) -> bool:
@@ -241,7 +271,7 @@ def scan_sites_in_system(site: str) -> None:
         set_dscan_range_to_maximum()
         time.sleep(0.1)
         set_dscan_angle_to_five_degree()
-        scan_sites_within_range(target_within_range)
+        scan_site_within_range(target_within_range)
         time.sleep(5)
 
     for target_outside_range in targets_within_and_outside_scan_range['targets_outside_scan_range']:
@@ -254,21 +284,24 @@ def scan_sites_in_system(site: str) -> None:
 
 
 # returns screen coordinates of the scanned site if scan results were empty (no ship was detected in that location)
-def scan_sites_within_scan_range(scanned_site_type: str) -> list:
-    scan_results = get_sites_within_and_outside_scan_range(scanned_site_type)
-    time.sleep(0.2)
-    if scan_results['sites_within_scan_range']:
-        target_coordinates = [hf.bounding_box_center_coordinates(target[1][0], OVERVIEW_REGION) for target in
-                              scan_results['sites_within_scan_range'] if len(scan_sites_within_range(target)) == 0]
-        return target_coordinates
+def scan_sites_within_scan_range(sites_to_scan: list) -> list:
+    for scan in sites_to_scan:
+        coordinates = hf.bounding_box_center_coordinates(scan[1][0], OVERVIEW_REGION)
+        scan_results = scan_site_within_range(coordinates)
+        if scan_results:
+            logging.info("Ship or ships were detected at the site. Site is invalid.")
+        else:
+            logging.info("No ship detected at the site. Site is valid.")
+            return coordinates
     return []
 
 
-def scan_sites_within_range(sites: list) -> list:
-    pyautogui.moveTo(hf.bounding_box_center_coordinates(sites[1][0], OVERVIEW_REGION))
+def scan_site_within_range(site_coordinates: list) -> list:
+    pyautogui.moveTo(site_coordinates)
     pyautogui.keyDown('v')
     pyautogui.click()
     pyautogui.keyUp('v')
+    time.sleep(0.5)
     scan_result = get_dscan_result()
     return scan_result
 
@@ -344,43 +377,53 @@ def select_probe_scanner() -> bool:
 
 
 def set_dscan_angle_to_five_degree() -> None:
-    angle_slider = None
-    screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                          confidence=main.generic_variables.dscan_confidence,
-                                          region=SCANNER_REGION)
-    for slider in sliders:
-        if angle_slider is None:
-            angle_slider = slider
-        if slider[0] > angle_slider[0]:
-            angle_slider = slider
-    x = angle_slider[0] + (angle_slider[2] / 2)
-    y = angle_slider[1] + (angle_slider[3] / 2)
-    pyautogui.moveTo(x=x, y=y)
-    pyautogui.click()
-    pyautogui.dragTo(screen_width * 0.85, y, 0.5, button='left')
-    hf.move_mouse_away_from_overview()
-    main.generic_variables.short_scan = False
+    try:
+        angle_slider = None
+        screen_width, screen_height = pyautogui.size()
+        sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                              confidence=main.generic_variables.dscan_confidence,
+                                              region=SCANNER_REGION)
+        for slider in sliders:
+            if angle_slider is None:
+                angle_slider = slider
+            if slider[0] > angle_slider[0]:
+                angle_slider = slider
+        x = angle_slider[0] + (angle_slider[2] / 2)
+        y = angle_slider[1] + (angle_slider[3] / 2)
+        pyautogui.moveTo(x=x, y=y)
+        pyautogui.click()
+        pyautogui.dragTo(screen_width * 0.85, y, 0.5, button='left')
+        hf.move_mouse_away_from_overview()
+        main.generic_variables.short_scan = False
+        time.sleep(3)
+    except pyscreeze.ImageNotFoundException:
+        logging.error("Slider image not found. Trying to enable directional scanner.")
+        select_directional_scanner()
 
 
 def set_dscan_angle_to_three_sixty_degree() -> None:
-    angle_slider = None
-    screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                          confidence=main.generic_variables.dscan_confidence,
-                                          region=SCANNER_REGION)
-    for slider in sliders:
-        if angle_slider is None:
-            angle_slider = slider
-        if slider[0] > angle_slider[0]:
-            angle_slider = slider
-    x = angle_slider[0] + (angle_slider[2] / 2)
-    y = angle_slider[1] + (angle_slider[3] / 2)
-    pyautogui.moveTo(x=x, y=y)
-    pyautogui.click()
-    pyautogui.dragTo(screen_width, y, 0.5, button='left')
-    hf.move_mouse_away_from_overview()
-    main.generic_variables.short_scan = True
+    try:
+        angle_slider = None
+        screen_width, screen_height = pyautogui.size()
+        sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                              confidence=main.generic_variables.dscan_confidence,
+                                              region=SCANNER_REGION)
+        for slider in sliders:
+            if angle_slider is None:
+                angle_slider = slider
+            if slider[0] > angle_slider[0]:
+                angle_slider = slider
+        x = angle_slider[0] + (angle_slider[2] / 2)
+        y = angle_slider[1] + (angle_slider[3] / 2)
+        pyautogui.moveTo(x=x, y=y)
+        pyautogui.click()
+        pyautogui.dragTo(screen_width, y, 0.5, button='left')
+        hf.move_mouse_away_from_overview()
+        main.generic_variables.short_scan = True
+    except pyscreeze.ImageNotFoundException:
+        logging.error("Slider image not found. Trying to enable directional scanner.")
+        select_directional_scanner()
+
 
 
 def set_dscan_range_to_maximum() -> bool:
@@ -407,34 +450,40 @@ def set_dscan_range_to_maximum() -> bool:
 
 
 def set_dscan_range_to_minimum() -> None:
-    range_slider = None
-    screen_width, screen_height = pyautogui.size()
-    sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                          confidence=main.generic_variables.dscan_confidence,
-                                          region=SCANNER_REGION)
-    for slider in sliders:
-        if range_slider is None:
-            range_slider = slider
-        if slider[0] < range_slider[0]:
-            range_slider = slider
-    x = range_slider[0] + (range_slider[2] / 2)
-    y = range_slider[1] + (range_slider[3] / 2)
-    pyautogui.moveTo(x=x, y=y)
-    pyautogui.click()
-    pyautogui.dragTo(screen_width * 0.80, y, 0.5, button='left')
+    try:
+        range_slider = None
+        screen_width, screen_height = pyautogui.size()
+        sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
+                                              confidence=main.generic_variables.dscan_confidence,
+                                              region=SCANNER_REGION)
+        for slider in sliders:
+            if range_slider is None:
+                range_slider = slider
+            if slider[0] < range_slider[0]:
+                range_slider = slider
+        x = range_slider[0] + (range_slider[2] / 2)
+        y = range_slider[1] + (range_slider[3] / 2)
+        pyautogui.moveTo(x=x, y=y)
+        pyautogui.click()
+        pyautogui.dragTo(screen_width * 0.80, y, 0.5, button='left')
+    except pyscreeze.ImageNotFoundException:
+        logging.error("Slider image not found in set_dscan_range_to_minimum.")
     hf.move_mouse_away_from_overview()
 
 
 def check_health_and_decide_if_to_repair() -> None:
     health = check_ship_status()
-    try:
-        if health[1] != '100%' and main.generic_variables.repairing is False:
-            logging.info("Damage detected. Turning repairer on.")
-            pyautogui.press(REPAIRER)
-            main.generic_variables.repairing = True
-        if health[1] == '100%' and main.generic_variables.repairing is True:
-            logging.info("No damage detected. Turning repairer off.")
-            pyautogui.press(REPAIRER)
-            main.generic_variables.repairing = False
-    except IndexError as e:
-        logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")
+    if health:
+        try:
+            if health[1] != '100%' and main.generic_variables.repairing is False:
+                logging.info("Damage detected. Turning repairer on.")
+                pyautogui.press(REPAIRER)
+                main.generic_variables.repairing = True
+            elif health[1] == '100%' and main.generic_variables.repairing is True:
+                logging.info("No damage detected. Turning repairer off.")
+                pyautogui.press(REPAIRER)
+                main.generic_variables.repairing = False
+            else:
+                logging.info("No damage detected.")
+        except IndexError as e:
+            logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")
