@@ -13,7 +13,6 @@ from constants import (
 
 import communication_and_coordination as cc
 import helper_functions as hf
-import main
 import scanning_and_information_gathering as sig
 import tests as test
 
@@ -47,13 +46,13 @@ def approach_capture_point() -> None:
 
 
 def choose_system_to_travel_to(systems: list) -> str:
-    if len(main.generic_variables.unvisited_systems) == 0:
+    if len(hf.generic_variables.unvisited_systems) == 0:
         random_system = random.choice(systems)
         unvisited_systems = systems
         unvisited_systems.remove(random_system)
         return random_system
-    random_system = random.choice(main.generic_variables.unvisited_systems)
-    main.generic_variables.unvisited_systems.remove(random_system)
+    random_system = random.choice(hf.generic_variables.unvisited_systems)
+    hf.generic_variables.unvisited_systems.remove(random_system)
     return random_system
 
 
@@ -132,16 +131,16 @@ def orbit_target() -> None:
 
 def set_destination(systems: list) -> bool:
     logging.info("Setting new destination.")
-    if main.generic_variables.destination and main.generic_variables.destination in systems:
-        systems.remove(main.generic_variables.destination)
+    if hf.generic_variables.destination and hf.generic_variables.destination in systems:
+        systems.remove(hf.generic_variables.destination)
     hf.select_gates_only_tab()
     hf.move_mouse_away_from_overview()
     time.sleep(0.5)
     hf.open_or_close_notepad()
     time.sleep(4)
-    main.generic_variables.destination = choose_system_to_travel_to(systems)
+    hf.generic_variables.destination = choose_system_to_travel_to(systems)
     screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-    destination_system = hf.search_for_string_in_region(main.generic_variables.destination,
+    destination_system = hf.search_for_string_in_region(hf.generic_variables.destination,
                                                         TOP_LEFT_REGION,
                                                         screenshot,
                                                         move_mouse_to_string=True)
@@ -150,7 +149,7 @@ def set_destination(systems: list) -> bool:
         pyautogui.rightClick()
         time.sleep(0.3)
     else:
-        logging.error(f"Cannot set new destination. Could not find {main.generic_variables.destination}.")
+        logging.error(f"Cannot set new destination. Could not find {hf.generic_variables.destination}.")
         hf.open_or_close_notepad()
         return False
     screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
@@ -162,7 +161,7 @@ def set_destination(systems: list) -> bool:
         pyautogui.click()
         pyautogui.moveTo(destination_system)
     hf.open_or_close_notepad()
-    logging.info(f"New destination set: {main.generic_variables.destination}.")
+    logging.info(f"New destination set: {hf.generic_variables.destination}.")
     return True
 
 
@@ -171,7 +170,7 @@ def set_destination_from_broadcast() -> bool:
         screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
         for system in SYSTEMS_TO_TRAVEL_TO:
             if hf.search_for_string_in_region(system, SCANNER_REGION, screenshot, move_mouse_to_string=True):
-                main.generic_variables.destination = system
+                hf.generic_variables.destination = system
                 pyautogui.rightClick()
                 time.sleep(0.1)
                 screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
@@ -250,9 +249,9 @@ def travel_to_destination_as_fc() -> None:
             break
     cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
-    if main.generic_variables.destination:
+    if hf.generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-            if not sig.check_if_destination_system_was_reached(main.generic_variables.destination, SCANNER_REGION):
+            if not sig.check_if_destination_system_was_reached(hf.generic_variables.destination, SCANNER_REGION):
                 travel_to_destination()
             else:
                 break
@@ -280,7 +279,7 @@ def travel_to_destination_as_fleet_member() -> None:
             break
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if not sig.check_if_destination_system_was_reached(main.generic_variables.destination, SCANNER_REGION):
+        if not sig.check_if_destination_system_was_reached(hf.generic_variables.destination, SCANNER_REGION):
             travel_to_destination()
         else:
             break
@@ -383,5 +382,5 @@ def wait_for_warp_to_end() -> None:
         if not hf.search_for_string_in_region('wa', CAPACITOR_REGION, screenshot):
             logging.info("Warp complete.")
             return
-        main.generic_variables.prop_module_on = False
+        hf.generic_variables.prop_module_on = False
         logging.info("In warp.")

@@ -9,7 +9,6 @@ from constants import (
 )
 
 import helper_functions as hf
-import main
 import scanning_and_information_gathering as sig
 import navigation_and_movement as nm
 
@@ -53,11 +52,11 @@ def broadcast_current_location() -> None:
 
 
 def broadcast_destination(retry: bool = False) -> bool:
-    if main.generic_variables.destination is not None:
+    if hf.generic_variables.destination is not None:
         hf.open_or_close_notepad()
         time.sleep(1)
         screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
-        hf.search_for_string_in_region(main.generic_variables.destination,
+        hf.search_for_string_in_region(hf.generic_variables.destination,
                                        TOP_LEFT_REGION,
                                        screenshot,
                                        move_mouse_to_string=True)
@@ -73,7 +72,7 @@ def broadcast_destination(retry: bool = False) -> bool:
         hf.open_or_close_notepad()
         time.sleep(1)
         if hf.check_if_correct_broadcast_was_sent('travel'):
-            logging.info(f"Destination broadcast to {main.generic_variables.destination} sent")
+            logging.info(f"Destination broadcast to {hf.generic_variables.destination} sent")
             return True
         elif retry is False:
             logging.error("Expected broadcast was not sent: Destination. Retrying...")

@@ -4,6 +4,7 @@ import logging
 import pyautogui
 from easyocr import Reader
 
+from dataclasses import dataclass, field
 import io
 from PIL import Image
 import re
@@ -13,12 +14,27 @@ from typing import List, Tuple, Union, Any
 from constants import (
     SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
-    MAX_PIXEL_SPREAD, NPC_MINMATAR, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE
+    MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE
 )
 
 import scanning_and_information_gathering as sig
 
 ocr_reader = Reader(['en'], gpu=True)
+
+
+@dataclass
+class GenericVariables:
+    unvisited_systems: list = field(default_factory=list)
+    short_scan: bool = None
+    dscan_confidence: float = 0.65
+    destination: str = ''
+    repairing: bool = False
+    guns_activated: bool = False
+    prop_module_on: bool = False
+    graphics_removed: bool = False
+
+
+generic_variables = GenericVariables()
 
 
 def bounding_box_center_coordinates(bounding_box: List, region: Tuple) -> [int, int]:
@@ -308,3 +324,19 @@ def turn_recording_on_or_off() -> None:
 
 def unlock_target() -> None:
     pyautogui.hotkey('ctrl', 'shift', interval=0.1)
+
+
+def set_correct_confidence():
+    for min_confidence_level in range(100, -1, -1):
+        try:
+            x, y = pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON,
+                                                  grayscale=False,
+                                                  confidence=min_confidence_level / 10,
+                                                  region=SELECTED_ITEM_REGION)
+            pyautogui.moveTo(x, y)
+
+            return min_confidence_level
+        except pyautogui.ImageNotFoundException:
+            pass
+
+    return None

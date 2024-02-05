@@ -1,13 +1,12 @@
 import time
 from typing import Tuple
 import logging
-import os
 
 import pyautogui
 import pyscreeze
 
 from constants import (
-    ALL_FRIGATES, ALL_DESTROYERS, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
+    ALL_FRIGATES, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
     SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON, WEBIFIER_ON_ICON_SMALL,
     MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER, SCRAMBLER_ON_ICON_SMALL, RAT_ICON
@@ -15,7 +14,6 @@ from constants import (
 
 import communication_and_coordination as cc
 import helper_functions as hf
-import main
 import navigation_and_movement as nm
 
 
@@ -249,11 +247,11 @@ def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
     logging.info("Making a short range 360 degrees scan.")
     if initial_scan:
         select_directional_scanner()
-    if main.generic_variables.short_scan is not True:
+    if hf.generic_variables.short_scan is not True:
         logging.info("Setting scan range to minimum and scan angle to 360 degrees.")
         set_dscan_range_to_minimum()
         set_dscan_angle_to_three_sixty_degree()
-        main.generic_variables.short_scan = True
+        hf.generic_variables.short_scan = True
     time.sleep(4)
     # pyautogui.press('v') doesn't seem to be working here
     pyautogui.keyDown('v')
@@ -312,11 +310,11 @@ def get_sites_within_and_outside_scan_range(site: str) -> dict:
     sites_outside_scan_range = []
     hf.select_fw_tab()
     select_directional_scanner()
-    if main.generic_variables.short_scan is True or main.generic_variables.short_scan is None:
+    if hf.generic_variables.short_scan is True or hf.generic_variables.short_scan is None:
         logging.info("Setting scanner to long range and 5 degrees.")
         set_dscan_range_to_maximum()
         set_dscan_angle_to_five_degree()
-        main.generic_variables.short_scan = False
+        hf.generic_variables.short_scan = False
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     results = hf.ocr_reader.readtext(screenshot)
     searched_term_found = [result for result in results if site.lower() in result[1].lower()]
@@ -381,7 +379,7 @@ def set_dscan_angle_to_five_degree() -> None:
         angle_slider = None
         screen_width, screen_height = pyautogui.size()
         sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                              confidence=main.generic_variables.dscan_confidence,
+                                              confidence=hf.generic_variables.dscan_confidence,
                                               region=SCANNER_REGION)
         for slider in sliders:
             if angle_slider is None:
@@ -394,7 +392,7 @@ def set_dscan_angle_to_five_degree() -> None:
         pyautogui.click()
         pyautogui.dragTo(screen_width * 0.85, y, 0.5, button='left')
         hf.move_mouse_away_from_overview()
-        main.generic_variables.short_scan = False
+        hf.generic_variables.short_scan = False
         time.sleep(3)
     except pyscreeze.ImageNotFoundException:
         logging.error("Slider image not found. Trying to enable directional scanner.")
@@ -406,7 +404,7 @@ def set_dscan_angle_to_three_sixty_degree() -> None:
         angle_slider = None
         screen_width, screen_height = pyautogui.size()
         sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                              confidence=main.generic_variables.dscan_confidence,
+                                              confidence=hf.generic_variables.dscan_confidence,
                                               region=SCANNER_REGION)
         for slider in sliders:
             if angle_slider is None:
@@ -419,11 +417,10 @@ def set_dscan_angle_to_three_sixty_degree() -> None:
         pyautogui.click()
         pyautogui.dragTo(screen_width, y, 0.5, button='left')
         hf.move_mouse_away_from_overview()
-        main.generic_variables.short_scan = True
+        hf.generic_variables.short_scan = True
     except pyscreeze.ImageNotFoundException:
         logging.error("Slider image not found. Trying to enable directional scanner.")
         select_directional_scanner()
-
 
 
 def set_dscan_range_to_maximum() -> bool:
@@ -431,7 +428,7 @@ def set_dscan_range_to_maximum() -> bool:
     screen_width, screen_height = pyautogui.size()
     try:
         sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                              confidence=main.generic_variables.dscan_confidence,
+                                              confidence=hf.generic_variables.dscan_confidence,
                                               region=SCANNER_REGION)
         for slider in sliders:
             if range_slider is None:
@@ -454,7 +451,7 @@ def set_dscan_range_to_minimum() -> None:
         range_slider = None
         screen_width, screen_height = pyautogui.size()
         sliders = pyautogui.locateAllOnScreen(DSCAN_SLIDER,
-                                              confidence=main.generic_variables.dscan_confidence,
+                                              confidence=hf.generic_variables.dscan_confidence,
                                               region=SCANNER_REGION)
         for slider in sliders:
             if range_slider is None:
@@ -475,14 +472,14 @@ def check_health_and_decide_if_to_repair() -> None:
     health = check_ship_status()
     if health:
         try:
-            if health[1] != '100%' and main.generic_variables.repairing is False:
+            if health[1] != '100%' and hf.generic_variables.repairing is False:
                 logging.info("Damage detected. Turning repairer on.")
                 pyautogui.press(REPAIRER)
-                main.generic_variables.repairing = True
-            elif health[1] == '100%' and main.generic_variables.repairing is True:
+                hf.generic_variables.repairing = True
+            elif health[1] == '100%' and hf.generic_variables.repairing is True:
                 logging.info("No damage detected. Turning repairer off.")
                 pyautogui.press(REPAIRER)
-                main.generic_variables.repairing = False
+                hf.generic_variables.repairing = False
             else:
                 logging.info("No damage detected.")
         except IndexError as e:
