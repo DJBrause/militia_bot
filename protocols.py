@@ -4,7 +4,8 @@ import logging
 
 from constants import (
     PROP_MOD, GUNS, OVERVIEW_REGION, SYSTEMS_TO_TRAVEL_TO, REPAIRER_EQUIPPED, MAX_NUMBER_OF_ATTEMPTS, DRONES_EQUIPPED,
-    NPC_MINMATAR, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, DEFAULT_CONFIDENCE, SHORT_SCAN_THRESHOLD, TIMEOUT_DURATION
+    NPC_MINMATAR, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, DEFAULT_CONFIDENCE, SHORT_SCAN_THRESHOLD, TIMEOUT_DURATION,
+    REPAIRER_CYCLE_TIME
 )
 
 import communication_and_coordination as cc
@@ -203,6 +204,7 @@ def engage_actions():
 
 def maintain_engagement(name: str) -> None:
     logging.info("Maintaining engagement.")
+    start = time.time()
     while True:
         if sig.check_if_target_is_locked():
             handle_locked_target()
@@ -213,7 +215,7 @@ def maintain_engagement(name: str) -> None:
             detected_hostiles = sig.check_overview_for_hostiles()
             if detected_hostiles:
                 return
-        if REPAIRER_EQUIPPED:
+        if REPAIRER_EQUIPPED and time.time() - start >= REPAIRER_CYCLE_TIME:
             sig.check_health_and_decide_if_to_repair()
 
 

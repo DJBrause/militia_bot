@@ -28,7 +28,7 @@ class GenericVariables:
     short_scan: bool = None
     dscan_confidence: float = 0.65
     destination: str = ''
-    repairing: bool = False
+    is_repairing: bool = False
     guns_activated: bool = False
     prop_module_on: bool = False
     graphics_removed: bool = False

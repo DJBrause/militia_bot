@@ -226,6 +226,8 @@ def travel_to_destination() -> None:
                 break
         wait_for_warp_to_end()
         time.sleep(12)
+        # Repairer turns off automatically after jump.
+        hf.generic_variables.is_repairing = False
     logging.info("Destination reached.")
     hf.notification_beep()
 

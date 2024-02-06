@@ -10,7 +10,7 @@ from constants import (
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
     SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON, WEBIFIER_ON_ICON_SMALL,
     MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER, SCRAMBLER_ON_ICON_SMALL, RAT_ICON,
-    OFFENSIVE_PLEXING
+    OFFENSIVE_PLEXING, PC_SPECIFIC_CONFIDENCE
 )
 
 import communication_and_coordination as cc
@@ -113,12 +113,16 @@ def check_if_location_secured() -> bool:
 def check_if_scrambler_is_operating() -> bool:
     time.sleep(0.1)
     try:
-        if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+        if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON,
+                                          grayscale=False,
+                                          confidence=PC_SPECIFIC_CONFIDENCE,
                                           region=TARGETS_REGION):
             return True
     except pyautogui.ImageNotFoundException:
         try:
-            if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON_SMALL, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+            if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON_SMALL,
+                                              grayscale=False,
+                                              confidence=PC_SPECIFIC_CONFIDENCE,
                                               region=TARGETS_REGION):
                 return True
         except pyautogui.ImageNotFoundException:
@@ -482,17 +486,19 @@ def set_dscan_range_to_minimum() -> None:
 def check_health_and_decide_if_to_repair() -> None:
     health = check_ship_status()
     time.sleep(0.1)
+
     if health:
         try:
-            if health['armor'] != '100%' and hf.generic_variables.repairing is False:
+            if health['armor'] != '100%' and not hf.generic_variables.is_repairing:
                 logging.info("Damage detected. Turning repairer on.")
+                time.sleep(0.1)
                 pyautogui.press(REPAIRER)
-                hf.generic_variables.repairing = True
-            elif health['armor'] == '100%' and hf.generic_variables.repairing is True:
+                hf.generic_variables.is_repairing = True
+            if health['armor'] == '100%' and hf.generic_variables.is_repairing:
                 logging.info("No damage detected. Turning repairer off.")
+                time.sleep(0.1)
                 pyautogui.press(REPAIRER)
-                hf.generic_variables.repairing = False
-            else:
-                logging.info("No damage detected.")
+                hf.generic_variables.is_repairing = False
+
         except IndexError as e:
             logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")
