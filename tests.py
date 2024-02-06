@@ -1,10 +1,12 @@
+import pyautogui
+
 from typing import List, Tuple, Union
 import time
 import logging
 
 
 import helper_functions as hf
-from constants import SELECTED_ITEM_REGION
+from constants import SELECTED_ITEM_REGION, TARGETS_REGION, GUNS
 
 
 def test_check_region(region: Tuple, save_screenshot: bool = False) -> list:
@@ -37,6 +39,6 @@ def test_if_target_in_selected_items(target_name: str) -> bool:
         logging.error("Test failed - Intended target is not selected.")
         return False
     except IndexError:
-        logging.debug(f"test_time = {time.time() - test_time}")
+        logging.debug(f"test_time_of_test_if_target_in_selected_items = {time.time() - test_time}")
         logging.error(f"Index error occurred in test_if_target_in_selected_items - target_name: {target_name}")
         return False

@@ -12,7 +12,7 @@ import time
 from typing import List, Tuple, Union, Any
 
 from constants import (
-    SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM,
+    SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM, UNLOCK_TARGET_ICON,
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
     MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE
 )
@@ -32,6 +32,8 @@ class GenericVariables:
     guns_activated: bool = False
     prop_module_on: bool = False
     graphics_removed: bool = False
+    initial_scan: bool = True
+    approaching_capture_point: bool = False
 
 
 generic_variables = GenericVariables()
@@ -236,17 +238,36 @@ def select_fw_tab() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     if search_for_string_in_region('fw', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
         pyautogui.click()
+        move_mouse_away_from_overview()
         return True
     return False
 
 
-def select_gates_only_tab() -> None:
+def select_stations_and_beacons_tab() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
-    search_for_string_in_region('gates', OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
+    if search_for_string_in_region('stations', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        move_mouse_away_from_overview()
+        return True
+    return False
+
+
+def select_gates_only_tab() -> bool:
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if search_for_string_in_region('gates', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        move_mouse_away_from_overview()
+        return True
+    return False
+
+
+def reload_ammo() -> None:
+    time.sleep(0.1)
+    pyautogui.hotkey('ctrl', 'r', interval=0.1)
 
 
 def remove_graphics() -> None:
+    time.sleep(0.1)
     pyautogui.hotkey('ctrl', 'shift', 'f9', interval=0.1)
 
 
@@ -256,16 +277,18 @@ def tackle_enemy_ship(initial_run: bool = False) -> None:
             pyautogui.press(SCRAM)
         if WEBIFIER_EQUIPPED:
             pyautogui.press(WEB)
-    elif SCRAMBLER_EQUIPPED and not sig.check_if_scrambler_is_operating():
-        pyautogui.press(SCRAM)
-    elif WEBIFIER_EQUIPPED and not sig.check_if_webifier_is_operating():
-        pyautogui.press(WEB)
+    else:
+        if SCRAMBLER_EQUIPPED and not sig.check_if_scrambler_is_operating():
+            pyautogui.press(SCRAM)
+        if WEBIFIER_EQUIPPED and not sig.check_if_webifier_is_operating():
+            pyautogui.press(WEB)
 
 
 def target_lock_using_overview(target_name: str) -> bool:
     logging.info("Attempting to lock target using overview.")
     with pyautogui.hold('ctrl'):
         pyautogui.click()
+        move_mouse_away_from_overview()
     for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
         logging.info(f"Checking if lock is complete. Current attempt: {attempt + 1}")
         if sig.check_if_target_is_locked():
@@ -306,23 +329,34 @@ def target_lock_using_selected_item(target_name: str) -> bool:
         return False
 
 
+def convert_nine_to_percent(input_string: str) -> str:
+    if input_string[-1] == '9':
+        return input_string[:-1] + '%'
+    return input_string
+
+
 def launch_drones() -> None:
-    pyautogui.hotkey('ctrl', 'f', interval=0.1)
+    time.sleep(0.1)
+    pyautogui.hotkey('shift', 'f', interval=0.1)
 
 
 def order_drones_to_engage() -> None:
+    time.sleep(0.1)
     pyautogui.press('f')
 
 
 def return_drones_to_bay() -> None:
-    pyautogui.hotkey('ctrl', 'r', interval=0.1)
+    time.sleep(0.1)
+    pyautogui.hotkey('shift', 'r', interval=0.1)
 
 
 def turn_recording_on_or_off() -> None:
+    time.sleep(0.1)
     pyautogui.hotkey('alt', 'f9', interval=0.1)
 
 
 def unlock_target() -> None:
+    time.sleep(0.1)
     pyautogui.hotkey('ctrl', 'shift', interval=0.1)
 
 

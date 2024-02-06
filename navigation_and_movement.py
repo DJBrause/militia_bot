@@ -24,6 +24,7 @@ def align_to(target: list) -> None:
 
 
 def approach() -> None:
+    time.sleep(0.1)
     logging.info("Approaching target.")
     pyautogui.keyDown('q')
     time.sleep(0.1)
@@ -43,6 +44,7 @@ def approach_capture_point() -> None:
     time.sleep(0.1)
     approach()
     hf.move_mouse_away_from_overview()
+    hf.generic_variables.approaching_capture_point = True
 
 
 def choose_system_to_travel_to(systems: list) -> str:
@@ -58,7 +60,8 @@ def choose_system_to_travel_to(systems: list) -> str:
 
 def dock_at_station() -> bool:
     stations = [DESTINATION_HOME_STATION, DESTINATION_STATION]
-    hf.select_fw_tab()
+    hf.select_stations_and_beacons_tab()
+    time.sleep(0.2)
     for station in stations:
         try:
             docking_station = pyautogui.locateCenterOnScreen(station,

@@ -9,7 +9,8 @@ from constants import (
     ALL_FRIGATES, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
     SCRAMBLER_ON_ICON, UNLOCK_TARGET_ICON, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, NPC_MINMATAR,
     SELECTED_ITEM_REGION, OVERVIEW_REGION, WEBIFIER_ON_ICON, SCANNER_REGION, LOCK_TARGET_ICON, WEBIFIER_ON_ICON_SMALL,
-    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER, SCRAMBLER_ON_ICON_SMALL, RAT_ICON
+    MAX_PIXEL_SPREAD, DSCAN_SLIDER, SHIP_HEALTH_BARS_COORDS, REPAIRER, SCRAMBLER_ON_ICON_SMALL, RAT_ICON,
+    OFFENSIVE_PLEXING
 )
 
 import communication_and_coordination as cc
@@ -100,10 +101,12 @@ def check_if_in_plex() -> bool:
 
 def check_if_location_secured() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(LOCAL_REGION)
-    if hf.search_for_string_in_region('captured', LOCAL_REGION, screenshot):
-        return True
-    if hf.search_for_string_in_region('secure', LOCAL_REGION, screenshot):
-        return True
+    if OFFENSIVE_PLEXING:
+        if hf.search_for_string_in_region('captured', LOCAL_REGION, screenshot):
+            return True
+    else:
+        if hf.search_for_string_in_region('secure', LOCAL_REGION, screenshot):
+            return True
     return False
 
 
@@ -203,9 +206,8 @@ def check_overview_for_hostiles() -> list:
 def check_overview_for_rats() -> str:
     logging.info("Checking overview for rats.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
-    for word in NPC_MINMATAR:
-        if hf.search_for_string_in_region(word, OVERVIEW_REGION, screenshot):
-            return NPC_MINMATAR[0]
+    if hf.search_for_string_in_region(NPC_MINMATAR[0], OVERVIEW_REGION, screenshot):
+        return NPC_MINMATAR[0]
     try:
         if pyautogui.locateOnScreen(RAT_ICON,
                                     grayscale=False,
@@ -233,14 +235,23 @@ def check_probe_scanner_and_try_to_activate_site(searched_site: str) -> bool:
     return False
 
 
-def check_ship_status() -> list:
+def check_ship_status() -> dict:
+    ship_status = {'shield': None, 'armor': None, 'structure': None}
     logging.info("Checking ship status.")
     pyautogui.moveTo(SHIP_HEALTH_BARS_COORDS)
     time.sleep(0.4)
     screenshot = hf.jpg_screenshot_of_the_selected_region(CAPACITOR_REGION)
     result = hf.ocr_reader.readtext(screenshot)
-    shield_armor_structure = [string[1] for string in result if '%' in string[1]]
-    return shield_armor_structure
+
+    for i in range(len(result)):
+        if 'sh' in result[i][1].lower():
+            ship_status['shield'] = hf.convert_nine_to_percent(result[i + 1][1])
+        if 'ar' in result[i][1].lower():
+            ship_status['armor'] = hf.convert_nine_to_percent(result[i + 1][1])
+        if 'str' in result[i][1].lower():
+            ship_status['structure'] = hf.convert_nine_to_percent(result[i + 1][1])
+
+    return ship_status
 
 
 def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
@@ -252,7 +263,7 @@ def make_a_short_range_three_sixty_scan(initial_scan: bool = True) -> list:
         set_dscan_range_to_minimum()
         set_dscan_angle_to_three_sixty_degree()
         hf.generic_variables.short_scan = True
-    time.sleep(4)
+    time.sleep(3)
     # pyautogui.press('v') doesn't seem to be working here
     pyautogui.keyDown('v')
     time.sleep(0.1)
@@ -308,7 +319,7 @@ def get_sites_within_and_outside_scan_range(site: str) -> dict:
     sites_within_and_outside_scan_range = {'sites_within_scan_range': [], 'sites_outside_scan_range': []}
     sites_within_scan_range = []
     sites_outside_scan_range = []
-    hf.select_fw_tab()
+    hf.select_stations_and_beacons_tab()
     select_directional_scanner()
     if hf.generic_variables.short_scan is True or hf.generic_variables.short_scan is None:
         logging.info("Setting scanner to long range and 5 degrees.")
@@ -470,13 +481,14 @@ def set_dscan_range_to_minimum() -> None:
 
 def check_health_and_decide_if_to_repair() -> None:
     health = check_ship_status()
+    time.sleep(0.1)
     if health:
         try:
-            if health[1] != '100%' and hf.generic_variables.repairing is False:
+            if health['armor'] != '100%' and hf.generic_variables.repairing is False:
                 logging.info("Damage detected. Turning repairer on.")
                 pyautogui.press(REPAIRER)
                 hf.generic_variables.repairing = True
-            elif health[1] == '100%' and hf.generic_variables.repairing is True:
+            elif health['armor'] == '100%' and hf.generic_variables.repairing is True:
                 logging.info("No damage detected. Turning repairer off.")
                 pyautogui.press(REPAIRER)
                 hf.generic_variables.repairing = False
