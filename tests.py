@@ -1,12 +1,10 @@
-import pyautogui
-
-from typing import List, Tuple, Union
+from typing import Tuple
 import time
 import logging
 
 
 import helper_functions as hf
-from constants import SELECTED_ITEM_REGION, TARGETS_REGION, GUNS
+from constants import SELECTED_ITEM_REGION, SCANNER_REGION
 
 
 def test_check_region(region: Tuple, save_screenshot: bool = False) -> list:
@@ -42,3 +40,24 @@ def test_if_target_in_selected_items(target_name: str) -> bool:
         logging.debug(f"test_time_of_test_if_target_in_selected_items = {time.time() - test_time}")
         logging.error(f"Index error occurred in test_if_target_in_selected_items - target_name: {target_name}")
         return False
+
+
+def test_if_correct_broadcast_was_sent(broadcast_keyword: str) -> bool:
+    logging.info(f"Checking if broadcast keyword is present in broadcasts: {broadcast_keyword}")
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    results = hf.ocr_reader.readtext(screenshot)
+    for result in results:
+        if broadcast_keyword.lower() in result[1].lower():
+            logging.info("Broadcast was sent correctly.")
+            return True
+    logging.error(f"Broadcast keyword was not found: {broadcast_keyword}.")
+    return False
+
+
+def test_in_position_broadcast() -> bool:
+    # Checks if the 'in position' string is present in the SCANNER_REGION.
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    if hf.search_for_string_in_region('in position', SCANNER_REGION, screenshot):
+        hf.clear_broadcast_history()
+        return True
+    return False

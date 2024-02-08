@@ -349,16 +349,16 @@ def fc_mission_plan() -> None:
 
 
 def fm_mission_plan() -> None:
+    nm.travel_to_destination_as_fleet_member()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        nm.travel_to_destination_as_fleet_member()
-        cc.await_orders()
-        while True:
-            if cc.warp_to_member_if_enemy_is_spotted():
-                break
-        engage_site_protocol()
         if hf.generic_variables.destination.lower() == HOME_SYSTEM[0].lower():
             break
+        if cc.await_orders():
+            engage_site_protocol()
+        else:
+            nm.travel_to_destination_as_fleet_member(False)
 
+    logging.info(f"New destination was set for home: {HOME_SYSTEM}.")
     nm.travel_home()
     logging.info("Mission plan ended.")
 

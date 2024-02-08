@@ -180,6 +180,7 @@ def set_destination_from_broadcast() -> bool:
                 screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
                 hf.search_for_string_in_region('dest', SCANNER_REGION, screenshot, move_mouse_to_string=True)
                 pyautogui.click()
+                logging.info("Traveling to new destination.")
                 return True
             time.sleep(2)
     return False
@@ -265,22 +266,23 @@ def travel_to_destination_as_fc() -> None:
         wait_for_warp_to_end()
 
 
-def travel_to_destination_as_fleet_member() -> None:
-    cc.join_existing_fleet()
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if hf.select_broadcasts():
-            break
-        else:
-            logging.warning("Cannot locate broadcasts.")
-            time.sleep(2)
-    if sig.check_if_docked():
-        undock()
-        time.sleep(20)
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if hf.select_fleet_tab():
-            break
-    cc.broadcast_in_position()
-    time.sleep(2)
+def travel_to_destination_as_fleet_member(initial_run: bool = True) -> None:
+    if initial_run:
+        cc.join_existing_fleet()
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if hf.select_broadcasts():
+                break
+            else:
+                logging.warning("Cannot locate broadcasts.")
+                time.sleep(2)
+        if sig.check_if_docked():
+            undock()
+            time.sleep(20)
+        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+            if hf.select_fleet_tab():
+                break
+        cc.broadcast_in_position()
+        time.sleep(2)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if set_destination_from_broadcast():
             break

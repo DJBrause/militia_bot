@@ -108,18 +108,6 @@ def extract_pilot_names_and_ship_types_from_screenshot() -> List[Tuple[str, Any]
         select_fw_tab()
 
 
-def check_if_correct_broadcast_was_sent(broadcast_keyword: str) -> bool:
-    logging.info(f"Checking if broadcast keyword is present in broadcasts: {broadcast_keyword}")
-    screenshot = jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    results = ocr_reader.readtext(screenshot)
-    for result in results:
-        if broadcast_keyword.lower() in result[1].lower():
-            logging.info("Broadcast was sent correctly.")
-            return True
-    logging.error(f"Broadcast keyword was not found: {broadcast_keyword}.")
-    return False
-
-
 def clean_up_spaces(input_string: str) -> str:
     # Replaces multiple consecutive spaces with a single space.
     cleaned_string = re.sub(r'\s+', ' ', input_string.strip())

@@ -26,13 +26,7 @@ def get_dscan_result() -> list:
     return frigate_on_scan
 
 
-def test_in_position_broadcast() -> bool:
-    # Checks if the 'in position' string is present in the SCANNER_REGION.
-    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    if hf.search_for_string_in_region('in position', SCANNER_REGION, screenshot):
-        hf.clear_broadcast_history()
-        return True
-    return False
+
 
 
 def test_if_station_in_system() -> bool:

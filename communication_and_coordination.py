@@ -3,7 +3,6 @@ import pyautogui
 import time
 from typing import Tuple
 
-import communication_and_coordination
 from constants import (
     FLEET_MEMBERS_COUNT, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, OVERVIEW_REGION, SCANNER_REGION,
     TOP_LEFT_REGION, PAUSE_AFTER_DESTINATION_BROADCAST
@@ -12,6 +11,7 @@ from constants import (
 import helper_functions as hf
 import scanning_and_information_gathering as sig
 import navigation_and_movement as nm
+import tests as test
 
 
 def await_fleet_members_to_arrive() -> None:
@@ -21,7 +21,7 @@ def await_fleet_members_to_arrive() -> None:
     hf.select_broadcasts()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         logging.info(f"Number of fleet members to report in: {fleet_members_to_arrive}")
-        if sig.test_in_position_broadcast():
+        if test.test_in_position_broadcast():
             fleet_members_to_arrive -= 1
         if fleet_members_to_arrive == 0:
             logging.info("All fleet members reported in position. Proceeding.")
@@ -29,7 +29,7 @@ def await_fleet_members_to_arrive() -> None:
         time.sleep(10)
 
 
-def await_orders() -> None:
+def await_orders() -> bool:
     logging.info("Pending orders.")
     hf.select_fleet_tab()
     hf.select_broadcasts()
@@ -38,7 +38,9 @@ def await_orders() -> None:
         if not in_align and align_to_broadcast_reaction():
             in_align = True
         if warp_to_member_if_enemy_is_spotted():
-            break
+            return True
+        if test.test_if_correct_broadcast_was_sent('travel'):
+            return False
 
 
 def broadcast_align_to(target: list) -> None:
@@ -74,7 +76,7 @@ def broadcast_destination(retry: bool = False) -> bool:
             pyautogui.click()
         hf.open_or_close_notepad()
         time.sleep(1)
-        if hf.check_if_correct_broadcast_was_sent('travel'):
+        if test.test_if_correct_broadcast_was_sent('travel'):
             logging.info(f"Destination broadcast to {hf.generic_variables.destination} sent")
             return True
         elif retry is False:
@@ -230,7 +232,7 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     logging.info("Awaiting 'in position' broadcast from all fleet members.")
     broadcast_count = 0
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if sig.test_in_position_broadcast():
+        if test.test_in_position_broadcast():
             broadcast_destination()
             broadcast_count += 1
         if broadcast_count == FLEET_MEMBERS_COUNT:
@@ -244,9 +246,11 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
 
 
 def warp_to_member_if_enemy_is_spotted() -> None:
+    logging.info("Checking for 'enemy spotted' broadcast.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     broadcast = hf.search_for_string_in_region('spotted', SCANNER_REGION, screenshot, move_mouse_to_string=True)
     if broadcast:
+        logging.info("'Enemy spotted' broadcast detected. Warping to fleet member.")
         nm.warp_within_70_km(broadcast, SCANNER_REGION)
 
 
