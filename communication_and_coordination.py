@@ -3,6 +3,7 @@ import pyautogui
 import time
 from typing import Tuple
 
+import communication_and_coordination
 from constants import (
     FLEET_MEMBERS_COUNT, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, OVERVIEW_REGION, SCANNER_REGION,
     TOP_LEFT_REGION
@@ -35,7 +36,6 @@ def await_orders() -> None:
     while True:
         if check_for_broadcast_and_align():
             break
-        time.sleep(1)
 
 
 def broadcast_align_to(target: list) -> None:
@@ -85,13 +85,21 @@ def broadcast_destination(retry: bool = False) -> bool:
 
 
 def broadcast_enemy_spotted() -> None:
+    time.sleep(0.1)
     logging.info("Enemy was spotted.")
     pyautogui.press('z')
 
 
 def broadcast_in_position() -> None:
+    # Apparently if '.' is pressed after selecting broadcasts, it expands the menu right below broadcast tab.
+    # In order to avoid this an empty space needs to be clicked somewhere.
+    hf.move_mouse_away_from_overview()
+    pyautogui.click()
+    time.sleep(0.1)
+    pyautogui.keyDown('.')
+    time.sleep(0.1)
+    pyautogui.keyUp('.')
     logging.info("In position broadcast sent.")
-    pyautogui.press('.')
 
 
 def broadcast_hold_position() -> None:
@@ -111,14 +119,24 @@ def broadcast_target(target_coordinates: list) -> None:
 
 def check_for_broadcast_and_align() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    if hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, move_mouse_to_string=True):
+    if hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, move_mouse_to_string=True, debug=True):
         pyautogui.rightClick()
         time.sleep(0.1)
         screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-        hf.search_for_string_in_region('lign to', SCANNER_REGION, screenshot, move_mouse_to_string=True)
-        pyautogui.click()
-        hf.clear_broadcast_history()
-        return True
+        if hf.search_for_string_in_region('lign to', SCANNER_REGION, screenshot, move_mouse_to_string=True, debug=True):
+            pyautogui.click()
+            # Sending broadcast_in_position in order to occlude the "align to" broadcast below broadcast history.
+            broadcast_in_position()
+            hf.clear_broadcast_history()
+            return True
+        elif hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, selected_result=1, move_mouse_to_string=True, debug=True):
+            pyautogui.click()
+            # Sending broadcast_in_position in order to occlude the "align to" broadcast below broadcast history.
+            broadcast_in_position()
+            hf.clear_broadcast_history()
+            return True
+        else:
+            logging.error("check_for_broadcast_and_align - could not find 'align to'")
     return False
 
 

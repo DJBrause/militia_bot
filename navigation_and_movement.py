@@ -169,6 +169,7 @@ def set_destination(systems: list) -> bool:
 
 
 def set_destination_from_broadcast() -> bool:
+    logging.info("Trying to obtain destination from broadcast.")
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
         for system in SYSTEMS_TO_TRAVEL_TO:
@@ -276,7 +277,8 @@ def travel_to_destination_as_fleet_member() -> None:
         undock()
         time.sleep(20)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        hf.select_fleet_tab()
+        if hf.select_fleet_tab():
+            break
     cc.broadcast_in_position()
     time.sleep(2)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
@@ -298,12 +300,13 @@ def undock():
     hf.move_mouse_away_from_overview()
 
 
-def warp_to_member_if_enemy_is_spotted() -> None:
+def warp_to_member_if_enemy_is_spotted() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     broadcast = hf.search_for_string_in_region('spotted', SCANNER_REGION, screenshot, move_mouse_to_string=True)
     if broadcast:
-        # todo region incorrect
-        warp_within_70_km(broadcast, OVERVIEW_REGION)
+        warp_within_70_km(broadcast, SCANNER_REGION)
+        return True
+    return False
 
 
 def warp_to_safe_spot() -> None:
@@ -318,7 +321,6 @@ def warp_to_safe_spot() -> None:
     screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
     hf.search_for_string_in_region('spo', TOP_LEFT_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
-
 
 
 def warp_to_scout_combat_site(region: Tuple) -> None:
@@ -349,7 +351,6 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
                                           screenshot,
                                           move_mouse_to_string=True):
             pyautogui.click()
-            time.sleep(0.1)
             hf.move_mouse_away_from_overview()
             return True
 

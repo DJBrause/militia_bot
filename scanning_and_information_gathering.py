@@ -111,18 +111,17 @@ def check_if_location_secured() -> bool:
 
 
 def check_if_scrambler_is_operating() -> bool:
-    time.sleep(0.1)
     try:
         if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON,
                                           grayscale=False,
-                                          confidence=PC_SPECIFIC_CONFIDENCE,
+                                          confidence=DEFAULT_CONFIDENCE,
                                           region=TARGETS_REGION):
             return True
     except pyautogui.ImageNotFoundException:
         try:
             if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON_SMALL,
                                               grayscale=False,
-                                              confidence=PC_SPECIFIC_CONFIDENCE,
+                                              confidence=DEFAULT_CONFIDENCE,
                                               region=TARGETS_REGION):
                 return True
         except pyautogui.ImageNotFoundException:
@@ -156,12 +155,12 @@ def check_if_target_is_outside_range() -> bool:
 def check_if_webifier_is_operating() -> bool:
     time.sleep(0.1)
     try:
-        if pyautogui.locateCenterOnScreen(WEBIFIER_ON_ICON, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+        if pyautogui.locateCenterOnScreen(WEBIFIER_ON_ICON, grayscale=False, confidence=PC_SPECIFIC_CONFIDENCE,
                                           region=TARGETS_REGION):
             return True
     except pyautogui.ImageNotFoundException:
         try:
-            if pyautogui.locateCenterOnScreen(WEBIFIER_ON_ICON_SMALL, grayscale=False, confidence=DEFAULT_CONFIDENCE,
+            if pyautogui.locateCenterOnScreen(WEBIFIER_ON_ICON_SMALL, grayscale=False, confidence=PC_SPECIFIC_CONFIDENCE,
                                               region=TARGETS_REGION):
                 return True
         except pyautogui.ImageNotFoundException:

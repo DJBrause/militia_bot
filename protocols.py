@@ -5,7 +5,7 @@ import logging
 from constants import (
     PROP_MOD, GUNS, OVERVIEW_REGION, SYSTEMS_TO_TRAVEL_TO, REPAIRER_EQUIPPED, MAX_NUMBER_OF_ATTEMPTS, DRONES_EQUIPPED,
     NPC_MINMATAR, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, DEFAULT_CONFIDENCE, SHORT_SCAN_THRESHOLD, TIMEOUT_DURATION,
-    REPAIRER_CYCLE_TIME
+    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM
 )
 
 import communication_and_coordination as cc
@@ -15,7 +15,7 @@ import scanning_and_information_gathering as sig
 import tests as test
 
 
-def behaviour_at_the_site() -> None:
+def fc_behaviour_at_the_site() -> None:
     logging.info("Awaiting site completion while checking if enemy is present.")
     start_time = time.time()
     enemy_on_scan = False
@@ -77,6 +77,15 @@ def behaviour_at_the_site() -> None:
     nm.warp_to_safe_spot()
     nm.wait_for_warp_to_end()
     hf.clear_local_chat_content()
+
+
+def fm_behaviour_at_the_site() -> None:
+    measure_engage_hostiles = time.time()
+    engage_hostiles()
+    logging.debug(f"measure_engage_hostiles = {time.time() - measure_engage_hostiles}")
+    pyautogui.scroll(2000)
+    nm.warp_to_safe_spot()
+    nm.wait_for_warp_to_end()
 
 
 def unlock_outpost_if_locked() -> None:
@@ -307,9 +316,12 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
     nm.wait_for_warp_to_end()
     hf.move_mouse_away_from_overview()
 
-    behaviour_at_the_site()
+    if IS_FC:
+        fc_behaviour_at_the_site()
     # else:
     #     reaction_to_possible_interception()
+    else:
+        fm_behaviour_at_the_site()
 
 
 def fc_mission_plan() -> None:
@@ -337,7 +349,15 @@ def fc_mission_plan() -> None:
 
 
 def fm_mission_plan() -> None:
-    nm.travel_to_destination_as_fleet_member()
-    cc.check_for_broadcast_and_align()
-    while True:
-        nm.warp_to_member_if_enemy_is_spotted()
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        nm.travel_to_destination_as_fleet_member()
+        cc.await_orders()
+        while True:
+            if nm.warp_to_member_if_enemy_is_spotted():
+                break
+        engage_site_protocol()
+        if hf.generic_variables.destination.lower() == HOME_SYSTEM[0].lower():
+            break
+
+    nm.travel_home()
+    logging.info("Mission plan ended.")
