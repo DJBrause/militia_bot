@@ -14,7 +14,8 @@ from typing import List, Tuple, Union, Any
 from constants import (
     SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM, UNLOCK_TARGET_ICON,
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
-    MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE
+    MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE,
+    SCRAMBLER_ON_ICON, SCRAMBLER_ON_ICON_SMALL, TARGETS_REGION
 )
 
 import scanning_and_information_gathering as sig
@@ -83,7 +84,7 @@ def clear_local_chat_content() -> bool:
         return False
 
 
-def extract_pilot_names_and_ship_types_from_screenshot() -> list[tuple[str, Any]]:
+def extract_pilot_names_and_ship_types_from_screenshot() -> List[Tuple[str, Any]]:
     # Takes a screenshot of the overview region and returns a list of tuples containing the pilot's name and
     # the type of ship they are flying along with ship type's bounding box coordinates.
     try:
@@ -363,10 +364,10 @@ def unlock_target() -> None:
 def set_correct_confidence():
     for min_confidence_level in range(100, -1, -1):
         try:
-            x, y = pyautogui.locateCenterOnScreen(UNLOCK_TARGET_ICON,
+            x, y = pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON,
                                                   grayscale=False,
-                                                  confidence=min_confidence_level / 10,
-                                                  region=SELECTED_ITEM_REGION)
+                                                  confidence=min_confidence_level / 100,
+                                                  region=TARGETS_REGION)
             pyautogui.moveTo(x, y)
 
             return min_confidence_level
