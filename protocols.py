@@ -338,6 +338,6 @@ def fc_mission_plan() -> None:
 
 def fm_mission_plan() -> None:
     nm.travel_to_destination_as_fleet_member()
-    cc.check_for_broadcast_and_align()
+    cc.await_orders()
     while True:
-        nm.warp_to_member_if_enemy_is_spotted()
+

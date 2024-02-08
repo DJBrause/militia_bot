@@ -5,7 +5,7 @@ from typing import Tuple
 
 from constants import (
     FLEET_MEMBERS_COUNT, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, OVERVIEW_REGION, SCANNER_REGION,
-    TOP_LEFT_REGION
+    TOP_LEFT_REGION, PAUSE_AFTER_DESTINATION_BROADCAST
 )
 
 import helper_functions as hf
@@ -32,10 +32,12 @@ def await_orders() -> None:
     logging.info("Pending orders.")
     hf.select_fleet_tab()
     hf.select_broadcasts()
+    in_align = False
     while True:
-        if check_for_broadcast_and_align():
+        if not in_align and align_to_broadcast_reaction():
+            in_align = True
+        if warp_to_member_if_enemy_is_spotted():
             break
-        time.sleep(1)
 
 
 def broadcast_align_to(target: list) -> None:
@@ -109,7 +111,7 @@ def broadcast_target(target_coordinates: list) -> None:
     pyautogui.click()
 
 
-def check_for_broadcast_and_align() -> bool:
+def align_to_broadcast_reaction() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     if hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, move_mouse_to_string=True):
         pyautogui.rightClick()
@@ -217,6 +219,16 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
             hf.clear_broadcast_history()
             break
         time.sleep(3)
+    # The below sleep time is necessary for the FM to be able to locate and select the destination before 'in position'
+    # broadcast is sent by FC.
+    time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
+
+
+def warp_to_member_if_enemy_is_spotted() -> None:
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    broadcast = hf.search_for_string_in_region('spotted', SCANNER_REGION, screenshot, move_mouse_to_string=True)
+    if broadcast:
+        nm.warp_within_70_km(broadcast, SCANNER_REGION)
 
 
 def fm_warps_to_fc_and_engages_target() -> None:

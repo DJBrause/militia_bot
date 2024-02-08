@@ -298,14 +298,6 @@ def undock():
     hf.move_mouse_away_from_overview()
 
 
-def warp_to_member_if_enemy_is_spotted() -> None:
-    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    broadcast = hf.search_for_string_in_region('spotted', SCANNER_REGION, screenshot, move_mouse_to_string=True)
-    if broadcast:
-        # todo region incorrect
-        warp_within_70_km(broadcast, OVERVIEW_REGION)
-
-
 def warp_to_safe_spot() -> None:
     logging.info("Warping to a safe spot.")
     hf.move_mouse_away_from_overview()

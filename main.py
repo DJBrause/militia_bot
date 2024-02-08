@@ -26,8 +26,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main()
-    ptc.behaviour_at_the_site()
-    # while True:
-    #     print(sig.check_if_scrambler_is_operating())
+    atexit.register(hf.turn_recording_on_or_off)
+    main()
