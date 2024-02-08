@@ -287,7 +287,8 @@ def scan_site_and_warp_to_70_if_empty(site_type: str) -> bool:
                 logging.info(f"Could not find site coordinates: {coordinates[0]}")
                 return False
             cc.broadcast_align_to(coordinates[0])
-            logging.info("Warping to the site and align broadcast was sent.")
+            logging.info("Align broadcast was sent.")
+            logging.info("Warping to the site.")
             return True
         logging.info("Scanned site is either outside scan range or is not empty.")
         return False
