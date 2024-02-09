@@ -73,10 +73,12 @@ def broadcast_destination(retry: bool = False) -> bool:
                                                    screenshot,
                                                    move_mouse_to_string=True)
         if broadcast:
-            time.sleep(0.3)
+            time.sleep(0.2)
             pyautogui.click()
         hf.open_or_close_notepad()
-        time.sleep(1)
+        # The below sleep time is necessary for the FM to be able to locate and select the destination before 'in position'
+        # broadcast is sent by FC.
+        time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
         if test.test_if_correct_broadcast_was_sent('travel'):
             logging.info(f"Destination broadcast to {hf.generic_variables.destination} sent")
             return True
@@ -241,9 +243,7 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
             hf.clear_broadcast_history()
             break
         time.sleep(3)
-    # The below sleep time is necessary for the FM to be able to locate and select the destination before 'in position'
-    # broadcast is sent by FC.
-    time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
+
 
 
 def warp_to_member_if_enemy_is_spotted() -> None:

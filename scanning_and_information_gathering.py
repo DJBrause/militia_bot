@@ -108,14 +108,14 @@ def check_if_scrambler_is_operating() -> bool:
     try:
         if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON,
                                           grayscale=False,
-                                          confidence=DEFAULT_CONFIDENCE,
+                                          confidence=PC_SPECIFIC_CONFIDENCE,
                                           region=TARGETS_REGION):
             return True
     except pyautogui.ImageNotFoundException:
         try:
             if pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON_SMALL,
                                               grayscale=False,
-                                              confidence=DEFAULT_CONFIDENCE,
+                                              confidence=PC_SPECIFIC_CONFIDENCE,
                                               region=TARGETS_REGION):
                 return True
         except pyautogui.ImageNotFoundException:

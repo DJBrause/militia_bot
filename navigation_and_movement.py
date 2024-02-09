@@ -198,6 +198,7 @@ def set_destination_home() -> None:
     hf.search_for_string_in_region('set destination', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
     pyautogui.hotkey('alt', 'a', interval=0.1)
+    hf.generic_variables.destination = HOME_SYSTEM
 
 
 def stop_ship() -> None:
@@ -210,6 +211,8 @@ def travel_home(fleet_up: bool = False) -> None:
     if fleet_up:
         cc.form_fleet()
     set_destination_home()
+    if IS_FC:
+        cc.broadcast_destination()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if not sig.check_if_destination_system_was_reached(HOME_SYSTEM, SCANNER_REGION):
             travel_to_destination()
