@@ -74,6 +74,7 @@ def fc_behaviour_at_the_site() -> None:
         logging.debug(f"measure_behaviour_at_the_site_loop = {time.time() - measure_behaviour_at_the_site_loop}")
 
     pyautogui.scroll(2000)
+    time.sleep(0.2)
     nm.warp_to_safe_spot()
     nm.wait_for_warp_to_end()
     hf.clear_local_chat_content()
@@ -282,12 +283,12 @@ def scan_site_and_warp_to_70_if_empty(site_type: str) -> bool:
             coordinates = sig.scan_sites_within_scan_range(sites['sites_within_scan_range'])
         if coordinates:
             try:
+                logging.debug(f"Coordinates = {coordinates}")
                 nm.warp_within_70_km(coordinates[0], OVERVIEW_REGION)
             except pyautogui.PyAutoGUIException:
                 logging.info(f"Could not find site coordinates: {coordinates[0]}")
                 return False
-            cc.broadcast_align_to(coordinates[0])
-            logging.info("Align broadcast was sent.")
+
             logging.info("Warping to the site.")
             return True
         logging.info("Scanned site is either outside scan range or is not empty.")

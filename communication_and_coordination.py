@@ -44,11 +44,12 @@ def await_orders() -> bool:
 
 
 def broadcast_align_to(target: list) -> None:
+    time.sleep(0.1)
     with pyautogui.hold('alt'):
         with pyautogui.hold('v'):
             pyautogui.moveTo(target)
             pyautogui.click()
-    logging.info('Align to broadcast sent')
+    logging.info('Align to broadcast sent.')
     hf.clear_broadcast_history()
 
 

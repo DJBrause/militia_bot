@@ -6,7 +6,7 @@ from typing import Tuple
 import pyautogui
 
 from constants import (
-    DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION,
+    DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION, IS_FC,
     HOME_SYSTEM, MAX_EXPECTED_TRAVEL_DISTANCE, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION,
     OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION, SYSTEMS_TO_TRAVEL_TO
 )
@@ -316,22 +316,13 @@ def warp_to_safe_spot() -> None:
     pyautogui.click()
 
 
-def warp_to_scout_combat_site(region: Tuple) -> None:
-    sig.select_probe_scanner()
-    screenshot_of_scanner = hf.jpg_screenshot_of_the_selected_region(region)
-    hf.search_for_string_in_region('scout', SCANNER_REGION, screenshot_of_scanner, True)
-    pyautogui.rightClick()
-    screenshot_of_scanner_with_warp_to_option = hf.jpg_screenshot_of_the_selected_region(region)
-    hf.search_for_string_in_region('to within', SCANNER_REGION, screenshot_of_scanner_with_warp_to_option, True)
-    pyautogui.click()
-
-
 # This won't work for warping to probe scanner items.
 def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
     logging.info("Warping within 70km.")
     pyautogui.moveTo(coords)
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
+
 
     if hf.search_for_string_in_region('ithin',
                                       region, screenshot,
@@ -344,6 +335,10 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
                                           screenshot,
                                           move_mouse_to_string=True):
             pyautogui.click()
+
+            if IS_FC:
+                cc.broadcast_align_to(coords)
+
             hf.move_mouse_away_from_overview()
             return True
 
