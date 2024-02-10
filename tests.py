@@ -1,10 +1,21 @@
+import pyautogui
+
 from typing import Tuple
 import time
 import logging
 
 
 import helper_functions as hf
-from constants import SELECTED_ITEM_REGION, SCANNER_REGION
+from constants import (
+    SELECTED_ITEM_REGION, SCANNER_REGION, UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
+    SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL, RAT_ICON,
+    GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER, MORE_ICON
+)
+
+images_used_in_program = [UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
+                          SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL,
+                          RAT_ICON, GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER,
+                          MORE_ICON]
 
 
 def test_check_region(region: Tuple, save_screenshot: bool = False) -> list:
@@ -61,3 +72,18 @@ def test_in_position_broadcast() -> bool:
         hf.clear_broadcast_history()
         return True
     return False
+
+
+def set_correct_confidence(image):
+    for min_confidence_level in range(100, -1, -1):
+        try:
+            x, y = pyautogui.locateCenterOnScreen(image,
+                                                  grayscale=False,
+                                                  confidence=min_confidence_level / 100,
+                                                  region=SELECTED_ITEM_REGION)
+            pyautogui.moveTo(x, y)
+
+            return min_confidence_level
+        except pyautogui.ImageNotFoundException:
+            pass
+    return None

@@ -349,17 +349,4 @@ def unlock_target() -> None:
     pyautogui.hotkey('ctrl', 'shift', interval=0.1)
 
 
-def set_correct_confidence():
-    for min_confidence_level in range(100, -1, -1):
-        try:
-            x, y = pyautogui.locateCenterOnScreen(SCRAMBLER_ON_ICON,
-                                                  grayscale=False,
-                                                  confidence=min_confidence_level / 100,
-                                                  region=TARGETS_REGION)
-            pyautogui.moveTo(x, y)
 
-            return min_confidence_level
-        except pyautogui.ImageNotFoundException:
-            pass
-
-    return None
