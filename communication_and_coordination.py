@@ -174,7 +174,8 @@ def create_fleet_advert() -> None:
 
 def form_fleet() -> None:
     logging.info("Forming fleet.")
-    pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
+    if not hf.select_fleet_tab():
+        pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
     time.sleep(0.2)
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     form_fleet_button = hf.search_for_string_in_region('form fleet', SCANNER_REGION, screenshot,
