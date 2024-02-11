@@ -29,8 +29,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main()
-    screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
-    hf.search_for_string_in_region('scout', OVERVIEW_REGION, screenshot, move_mouse_to_string=True)
+    atexit.register(hf.turn_recording_on_or_off)
+    main()
+
 

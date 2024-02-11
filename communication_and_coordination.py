@@ -252,7 +252,6 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     broadcast_destination()
 
 
-
 def warp_to_member_if_enemy_is_spotted() -> None:
     logging.info("Checking for 'enemy spotted' broadcast.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
