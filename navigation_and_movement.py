@@ -8,7 +8,8 @@ import pyautogui
 from constants import (
     DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION, IS_FC,
     HOME_SYSTEM, MAX_EXPECTED_TRAVEL_DISTANCE, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION,
-    OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION, SYSTEMS_TO_TRAVEL_TO
+    OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION, SYSTEMS_TO_TRAVEL_TO,
+    PAUSE_AFTER_DESTINATION_BROADCAST
 )
 
 import communication_and_coordination as cc
@@ -212,7 +213,7 @@ def travel_home(fleet_up: bool = False) -> None:
     if fleet_up:
         cc.form_fleet()
     set_destination_home()
-    if IS_FC is True:
+    if IS_FC:
         cc.broadcast_destination()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if not sig.check_if_destination_system_was_reached(HOME_SYSTEM, SCANNER_REGION):
@@ -255,6 +256,7 @@ def travel_to_destination_as_fc() -> None:
     hf.select_broadcasts()
     cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
+    time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
     if hf.generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not sig.check_if_destination_system_was_reached(hf.generic_variables.destination, SCANNER_REGION):
@@ -335,7 +337,7 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
                                           move_mouse_to_string=True):
             pyautogui.click()
 
-            if IS_FC is True:
+            if IS_FC:
                 cc.broadcast_align_to(coords)
 
             hf.move_mouse_away_from_overview()

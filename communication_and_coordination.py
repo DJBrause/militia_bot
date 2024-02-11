@@ -34,13 +34,17 @@ def await_orders() -> bool:
     hf.select_fleet_tab()
     hf.select_broadcasts()
     in_align = False
+    in_position_sent = False
     while True:
+        if not in_position_sent and test.test_if_correct_broadcast_was_sent('hold'):
+            broadcast_in_position()
+            in_position_sent = True
+        if test.test_if_correct_broadcast_was_sent('travel'):
+            return False
         if not in_align and align_to_broadcast_reaction():
             in_align = True
         if warp_to_member_if_enemy_is_spotted():
             return True
-        if test.test_if_correct_broadcast_was_sent('travel'):
-            return False
 
 
 def broadcast_align_to(target: list) -> None:
@@ -76,7 +80,7 @@ def broadcast_destination(retry: bool = False) -> bool:
             time.sleep(0.2)
             pyautogui.click()
             hf.move_mouse_away_from_overview()
-            time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
+
         hf.open_or_close_notepad()
         # The below sleep time is necessary for the FM to be able to locate and select the destination before 'in position'
         # broadcast is sent by FC.

@@ -277,14 +277,14 @@ def remove_graphics() -> None:
 
 def tackle_enemy_ship(initial_run: bool = False) -> None:
     if initial_run:
-        if SCRAMBLER_EQUIPPED is True:
+        if SCRAMBLER_EQUIPPED:
             pyautogui.press(SCRAM)
-        if WEBIFIER_EQUIPPED is True:
+        if WEBIFIER_EQUIPPED:
             pyautogui.press(WEB)
     else:
-        if SCRAMBLER_EQUIPPED is True and not sig.check_if_scrambler_is_operating():
+        if SCRAMBLER_EQUIPPED and not sig.check_if_scrambler_is_operating():
             pyautogui.press(SCRAM)
-        if WEBIFIER_EQUIPPED is True and not sig.check_if_webifier_is_operating():
+        if WEBIFIER_EQUIPPED and not sig.check_if_webifier_is_operating():
             pyautogui.press(WEB)
 
 
