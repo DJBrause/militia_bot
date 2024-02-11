@@ -243,8 +243,9 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
         if broadcast_count == FLEET_MEMBERS_COUNT:
             logging.info("All fleet members are ready. Proceeding to destination.")
             hf.clear_broadcast_history()
-            break
+            return
         time.sleep(3)
+    broadcast_destination()
 
 
 

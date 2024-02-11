@@ -251,13 +251,8 @@ def travel_to_destination_as_fc() -> None:
             time.sleep(0.1)
     # cannot broadcast destination while docked
     set_destination(SYSTEMS_TO_TRAVEL_TO)
-
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if hf.select_fleet_tab():
-            break
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        if hf.select_broadcasts():
-            break
+    hf.select_fleet_tab()
+    hf.select_broadcasts()
     cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
     if hf.generic_variables.destination:

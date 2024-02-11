@@ -20,14 +20,16 @@ logging.basicConfig(filename='logfile.log',
 def main() -> None:
     hf.turn_recording_on_or_off()
     time.sleep(8)
-    if IS_FC is True:
+    if IS_FC == 'True':
+        logging.info(f"IS_FC = {IS_FC}")
         ptc.fc_mission_plan()
     else:
+        logging.info(f"IS_FC = {IS_FC}")
         ptc.fm_mission_plan()
 
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main()
-    hf.clear_local_chat_content()
+    atexit.register(hf.turn_recording_on_or_off)
+    main()
+
