@@ -26,7 +26,7 @@ def fc_behaviour_at_the_site() -> None:
         engage_actions()
         restore_graphics_and_reload_ammo()
 
-        if DRONES_EQUIPPED:
+        if DRONES_EQUIPPED is True:
             hf.return_drones_to_bay()
 
         short_range_scan_result, enemy_on_scan = perform_scan_protocol(hf.generic_variables.initial_scan, enemy_on_scan)
@@ -187,7 +187,7 @@ def attempt_to_target_lock_the_enemy(name: str) -> bool:
 
 def engagement_protocol(name: str) -> bool:
     logging.info("Engagement protocol is active.")
-    if DRONES_EQUIPPED:
+    if DRONES_EQUIPPED is True:
         hf.launch_drones()
     if attempt_to_select_the_enemy(name):
         if not attempt_to_target_lock_the_enemy(name):
@@ -225,7 +225,7 @@ def maintain_engagement(name: str) -> None:
             detected_hostiles = sig.check_overview_for_hostiles()
             if detected_hostiles:
                 return
-        if REPAIRER_EQUIPPED and time.time() - start >= REPAIRER_CYCLE_TIME:
+        if REPAIRER_EQUIPPED is True and time.time() - start >= REPAIRER_CYCLE_TIME:
             sig.check_health_and_decide_if_to_repair()
 
 
@@ -234,7 +234,7 @@ def handle_locked_target() -> None:
     nm.approach()
     time.sleep(0.1)
     hf.tackle_enemy_ship()
-    if DRONES_EQUIPPED:
+    if DRONES_EQUIPPED is True:
         hf.order_drones_to_engage()
 
 
@@ -318,7 +318,7 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
     nm.wait_for_warp_to_end()
     hf.move_mouse_away_from_overview()
 
-    if IS_FC:
+    if IS_FC is True:
         fc_behaviour_at_the_site()
     # else:
     #     reaction_to_possible_interception()
@@ -355,7 +355,7 @@ def fm_mission_plan() -> None:
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.generic_variables.destination.lower() == HOME_SYSTEM[0].lower():
             break
-        if cc.await_orders():
+        if cc.await_command_decision_on_safe_spot():
             engage_site_protocol()
         else:
             nm.travel_to_destination_as_fleet_member(False)

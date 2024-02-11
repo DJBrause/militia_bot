@@ -5,8 +5,7 @@ import logging
 import communication_and_coordination as cc
 import navigation_and_movement as nm
 
-
-from constants import IS_FC, REPAIRER_CYCLE_TIME, OVERVIEW_REGION
+from constants import IS_FC, REPAIRER_CYCLE_TIME
 import helper_functions as hf
 import protocols as ptc
 
@@ -19,7 +18,7 @@ logging.basicConfig(filename='logfile.log',
 
 
 def main() -> None:
-    hf.turn_recording_on_or_off()
+    # hf.turn_recording_on_or_off()
     time.sleep(8)
     if IS_FC:
         ptc.fc_mission_plan()
@@ -31,5 +30,4 @@ if __name__ == "__main__":
     hf.beep_x_times(1)
     atexit.register(hf.turn_recording_on_or_off)
     main()
-
 

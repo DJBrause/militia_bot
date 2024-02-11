@@ -29,8 +29,8 @@ def await_fleet_members_to_arrive() -> None:
         time.sleep(10)
 
 
-def await_orders() -> bool:
-    logging.info("Pending orders.")
+def await_command_decision_on_safe_spot() -> bool:
+    logging.info("Awaiting orders.")
     hf.select_fleet_tab()
     hf.select_broadcasts()
     in_align = False
@@ -142,12 +142,14 @@ def align_to_broadcast_reaction() -> bool:
             # Sending broadcast_in_position in order to occlude the "align to" broadcast below broadcast history.
             broadcast_in_position()
             hf.clear_broadcast_history()
+            logging.info("Align to broadcast found.")
             return True
         elif hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, selected_result=1, move_mouse_to_string=True, debug=True):
             pyautogui.click()
             # Sending broadcast_in_position in order to occlude the "align to" broadcast below broadcast history.
             broadcast_in_position()
             hf.clear_broadcast_history()
+            logging.info("Align to broadcast found.")
             return True
         else:
             logging.error("check_for_broadcast_and_align - could not find 'align to'")
@@ -200,7 +202,8 @@ def form_fleet() -> None:
 
 def join_existing_fleet() -> None:
     logging.info("Joining an existing fleet.")
-    pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
+    if not hf.select_fleet_tab():
+        pyautogui.hotkey('ctrl', 'alt', 'f', interval=0.1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     hf.search_for_string_in_region('ind', SCANNER_REGION, screenshot, move_mouse_to_string=True)
     pyautogui.click()
