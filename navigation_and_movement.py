@@ -212,7 +212,7 @@ def travel_home(fleet_up: bool = False) -> None:
     if fleet_up:
         cc.form_fleet()
     set_destination_home()
-    if IS_FC:
+    if IS_FC is True:
         cc.broadcast_destination()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if not sig.check_if_destination_system_was_reached(HOME_SYSTEM, SCANNER_REGION):
@@ -340,7 +340,7 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
                                           move_mouse_to_string=True):
             pyautogui.click()
 
-            if IS_FC:
+            if IS_FC is True:
                 cc.broadcast_align_to(coords)
 
             hf.move_mouse_away_from_overview()

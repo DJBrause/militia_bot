@@ -20,7 +20,7 @@ logging.basicConfig(filename='logfile.log',
 def main() -> None:
     hf.turn_recording_on_or_off()
     time.sleep(8)
-    if IS_FC:
+    if IS_FC is True:
         ptc.fc_mission_plan()
     else:
         ptc.fm_mission_plan()
