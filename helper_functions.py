@@ -68,7 +68,7 @@ def clear_local_chat_content() -> bool:
     try:
         more_icon = pyautogui.locateCenterOnScreen(MORE_ICON,
                                                    grayscale=False,
-                                                   confidence=DEFAULT_CONFIDENCE,
+                                                   confidence=PC_SPECIFIC_CONFIDENCE,
                                                    region=LOCAL_REGION)
         if more_icon:
             pyautogui.moveTo(more_icon)
@@ -248,6 +248,21 @@ def select_gates_only_tab() -> bool:
         move_mouse_away_from_overview()
         return True
     return False
+
+
+def set_correct_confidence(image):
+    for min_confidence_level in range(100, -1, -1):
+        try:
+            x, y = pyautogui.locateCenterOnScreen(image,
+                                                  grayscale=False,
+                                                  confidence=min_confidence_level / 100,
+                                                  region=SELECTED_ITEM_REGION)
+            pyautogui.moveTo(x, y)
+
+            return min_confidence_level
+        except pyautogui.ImageNotFoundException:
+            pass
+    return None
 
 
 def reload_ammo() -> None:

@@ -75,10 +75,12 @@ def broadcast_destination(retry: bool = False) -> bool:
         if broadcast:
             time.sleep(0.2)
             pyautogui.click()
+            hf.move_mouse_away_from_overview()
+            time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
         hf.open_or_close_notepad()
         # The below sleep time is necessary for the FM to be able to locate and select the destination before 'in position'
         # broadcast is sent by FC.
-        time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
+
         if test.test_if_correct_broadcast_was_sent('travel'):
             logging.info(f"Destination broadcast to {hf.generic_variables.destination} sent")
             return True

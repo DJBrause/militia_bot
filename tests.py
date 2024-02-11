@@ -1,21 +1,29 @@
-import pyautogui
+import pprint
 
+import pyautogui
+import pyscreeze
 from typing import Tuple
 import time
 import logging
 
 
 import helper_functions as hf
+import communication_and_coordination as cc
+import navigation_and_movement as nm
 from constants import (
     SELECTED_ITEM_REGION, SCANNER_REGION, UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
     SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL, RAT_ICON,
-    GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER, MORE_ICON
+    GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER, MORE_ICON, DEFAULT_CONFIDENCE,
+    LOCAL_REGION, SYSTEMS_TO_TRAVEL_TO
 )
+import scanning_and_information_gathering as sig
 
 images_used_in_program = [UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
                           SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL,
                           RAT_ICON, GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER,
                           MORE_ICON]
+
+
 
 
 def test_check_region(region: Tuple, save_screenshot: bool = False) -> list:
@@ -74,16 +82,81 @@ def test_in_position_broadcast() -> bool:
     return False
 
 
-def set_correct_confidence(image):
-    for min_confidence_level in range(100, -1, -1):
-        try:
-            x, y = pyautogui.locateCenterOnScreen(image,
-                                                  grayscale=False,
-                                                  confidence=min_confidence_level / 100,
-                                                  region=SELECTED_ITEM_REGION)
-            pyautogui.moveTo(x, y)
+class TestFleetCommunication:
+    def test_more_icon_present_in_local_chat(self):
+        more_icon = pyautogui.locateCenterOnScreen(MORE_ICON,
+                                                   grayscale=False,
+                                                   confidence=DEFAULT_CONFIDENCE,
+                                                   region=LOCAL_REGION)
+        pyautogui.moveTo(more_icon)
+        pyautogui.click()
+        time.sleep(0.1)
+        screenshot = hf.jpg_screenshot_of_the_selected_region(LOCAL_REGION)
+        clear_all_content = hf.search_for_string_in_region('clear', LOCAL_REGION, screenshot, move_mouse_to_string=True)
 
-            return min_confidence_level
-        except pyautogui.ImageNotFoundException:
-            pass
-    return None
+        assert more_icon is not None
+        assert clear_all_content is not None
+        assert isinstance(more_icon, pyscreeze.Point)
+        assert isinstance(clear_all_content, tuple)
+
+    # In order to run the broadcast test, ship has to be undocked. Preferably in a safe spot.
+    def test_if_fleet_tab_is_selectable(self):
+        if not sig.check_if_in_fleet():
+            cc.form_fleet()
+            time.sleep(0.1)
+        fleet_tab_was_selected = hf.select_fleet_tab()
+
+        assert fleet_tab_was_selected is True
+
+    def test_if_broadcasts_tab_is_selectable(self):
+        if not sig.check_if_in_fleet():
+            cc.form_fleet()
+            time.sleep(0.1)
+        broadcasts_tab_was_selected = hf.select_broadcasts()
+
+        assert broadcasts_tab_was_selected is True
+
+    def test_in_position_broadcast(self):
+        if not sig.check_if_in_fleet():
+            cc.form_fleet()
+            time.sleep(0.1)
+        hf.select_fleet_tab()
+        hf.select_broadcasts()
+        hf.clear_broadcast_history()
+        cc.broadcast_in_position()
+        result = test_if_correct_broadcast_was_sent('in position')
+
+        assert result is True
+
+    def test_travel_to_broadcast(self):
+        systems = SYSTEMS_TO_TRAVEL_TO.copy()
+        if not sig.check_if_in_fleet():
+            cc.form_fleet()
+            time.sleep(0.1)
+        hf.select_fleet_tab()
+        hf.select_broadcasts()
+        hf.clear_broadcast_history()
+        nm.set_destination(systems)
+        cc.broadcast_destination()
+        result = test_if_correct_broadcast_was_sent(hf.generic_variables.destination)
+
+        assert result is True
+
+    def test_set_destination_from_broadcast(self):
+        hf.generic_variables.destination = ''
+        if not sig.check_if_in_fleet():
+            cc.form_fleet()
+            time.sleep(0.1)
+        hf.select_fleet_tab()
+        hf.select_broadcasts()
+        result = nm.set_destination_from_broadcast()
+
+        assert result is True
+
+
+
+
+
+
+
+

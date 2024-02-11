@@ -164,25 +164,26 @@ def set_destination(systems: list) -> bool:
         pyautogui.click()
         pyautogui.moveTo(destination_system)
     hf.open_or_close_notepad()
+    x, y = pyautogui.size()
+    hf.move_mouse_away_from_overview([x/2, y/2])
     logging.info(f"New destination set: {hf.generic_variables.destination}.")
     return True
 
 
 def set_destination_from_broadcast() -> bool:
     logging.info("Trying to obtain destination from broadcast.")
-    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-        screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-        for system in SYSTEMS_TO_TRAVEL_TO:
-            if hf.search_for_string_in_region(system, SCANNER_REGION, screenshot, move_mouse_to_string=True):
-                hf.generic_variables.destination = system
-                pyautogui.rightClick()
-                time.sleep(0.1)
-                screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-                hf.search_for_string_in_region('dest', SCANNER_REGION, screenshot, move_mouse_to_string=True)
-                pyautogui.click()
-                logging.info("Traveling to new destination.")
-                return True
-            time.sleep(2)
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    for system in SYSTEMS_TO_TRAVEL_TO:
+        if hf.search_for_string_in_region(system, SCANNER_REGION, screenshot, move_mouse_to_string=True):
+            hf.generic_variables.destination = system
+            pyautogui.rightClick()
+            time.sleep(0.1)
+            screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+            hf.search_for_string_in_region('dest', SCANNER_REGION, screenshot, move_mouse_to_string=True)
+            pyautogui.click()
+            logging.info("Traveling to new destination.")
+            return True
+    logging.error("Could not read destination from broadcast.")
     return False
 
 
