@@ -152,11 +152,3 @@ class TestFleetCommunication:
         result = nm.set_destination_from_broadcast()
 
         assert result is True
-
-
-
-
-
-
-
-

@@ -129,7 +129,6 @@ def jump_through_gate_to_destination() -> bool:
 
 def orbit_target() -> None:
     with pyautogui.hold('w'):
-
         pyautogui.click()
 
 
@@ -188,17 +187,23 @@ def set_destination_from_broadcast() -> bool:
     return False
 
 
-def set_destination_home() -> None:
+def set_destination_home(initial_run: bool = False) -> None:
     pyautogui.hotkey('alt', 'a', interval=0.1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
-    hf.search_for_string_in_region('character', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
-    screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
-    hf.search_for_string_in_region('home station', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
-    screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
-    hf.search_for_string_in_region('set destination', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
+    if hf.search_for_string_in_region('set destination',
+                                      MID_TO_TOP_REGION,
+                                      screenshot,
+                                      move_mouse_to_string=True):
+        pyautogui.click()
+    elif initial_run is False:
+        screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
+        hf.search_for_string_in_region('character', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
+        pyautogui.click()
+        screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
+        hf.search_for_string_in_region('home station', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
+        pyautogui.click()
+        set_destination_home(True)
+
     pyautogui.hotkey('alt', 'a', interval=0.1)
     hf.generic_variables.destination = HOME_SYSTEM
 
@@ -213,8 +218,9 @@ def travel_home(fleet_up: bool = False) -> None:
     if fleet_up:
         cc.form_fleet()
     set_destination_home()
-    if IS_FC:
+    if IS_FC is True:
         cc.broadcast_destination()
+
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if not sig.check_if_destination_system_was_reached(HOME_SYSTEM, SCANNER_REGION):
             travel_to_destination()
@@ -269,7 +275,8 @@ def travel_to_destination_as_fc() -> None:
 
 def travel_to_destination_as_fleet_member(initial_run: bool = True) -> None:
     if initial_run:
-        cc.join_existing_fleet()
+        if not sig.check_if_in_fleet():
+            cc.join_existing_fleet()
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if hf.select_broadcasts():
                 break
@@ -324,7 +331,6 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
     pyautogui.rightClick()
     screenshot = hf.jpg_screenshot_of_the_selected_region(region)
 
-
     if hf.search_for_string_in_region('ithin',
                                       region, screenshot,
                                       move_mouse_to_string=True,
@@ -337,7 +343,7 @@ def warp_within_70_km(coords: list, region: Tuple, retry: bool = False) -> bool:
                                           move_mouse_to_string=True):
             pyautogui.click()
 
-            if IS_FC:
+            if IS_FC is True:
                 cc.broadcast_align_to(coords)
 
             hf.move_mouse_away_from_overview()
