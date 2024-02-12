@@ -256,6 +256,13 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     broadcast_destination()
 
 
+def wait_for_in_position_broadcast() -> None:
+    for _ in range(MAX_NUMBER_OF_ATTEMPTS):
+        if test.test_in_position_broadcast():
+            break
+        time.sleep(1)
+
+
 def warp_to_member_if_enemy_is_spotted() -> bool:
     logging.info("Checking for 'enemy spotted' broadcast.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)

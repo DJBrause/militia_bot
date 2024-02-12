@@ -9,7 +9,7 @@ from constants import (
     DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION, IS_FC,
     HOME_SYSTEM, MAX_EXPECTED_TRAVEL_DISTANCE, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION,
     OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION, SYSTEMS_TO_TRAVEL_TO,
-    PAUSE_AFTER_DESTINATION_BROADCAST, AMARR_SYSTEMS, MINMATAR_SYSTEMS
+    AMARR_SYSTEMS, MINMATAR_SYSTEMS
 )
 
 import communication_and_coordination as cc
@@ -270,6 +270,7 @@ def travel_to_destination_as_fc() -> None:
     hf.select_broadcasts()
     cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
+    cc.wait_for_in_position_broadcast()
     if hf.generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not sig.check_if_destination_system_was_reached(hf.generic_variables.destination, SCANNER_REGION):
@@ -292,9 +293,12 @@ def travel_to_destination_as_fleet_member(initial_run: bool = True) -> None:
         if not hf.select_fleet_tab():
             logging.error("Cannot locate fleet tab.")
         cc.broadcast_in_position()
+        hf.clear_broadcast_history()
         time.sleep(2)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if set_destination_from_broadcast():
+            cc.broadcast_in_position()
+            hf.clear_broadcast_history()
             break
 
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
