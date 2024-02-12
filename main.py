@@ -18,7 +18,7 @@ logging.basicConfig(filename='logfile.log',
 
 
 def main() -> None:
-    hf.turn_recording_on_or_off()
+    # hf.turn_recording_on_or_off()
     time.sleep(8)
     if IS_FC:
         ptc.fc_mission_plan()
@@ -28,7 +28,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main()
-    hf.region_selector()
+    main()
+
 

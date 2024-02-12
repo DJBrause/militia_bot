@@ -5,11 +5,10 @@ from typing import Tuple
 
 from constants import (
     FLEET_MEMBERS_COUNT, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, OVERVIEW_REGION, SCANNER_REGION,
-    TOP_LEFT_REGION, PAUSE_AFTER_DESTINATION_BROADCAST
+    TOP_LEFT_REGION, IS_FC
 )
 
 import helper_functions as hf
-import scanning_and_information_gathering as sig
 import navigation_and_movement as nm
 import tests as test
 
@@ -194,7 +193,8 @@ def form_fleet() -> None:
             if hf.search_for_string_in_region('form fleet', SCANNER_REGION, screenshot, move_mouse_to_string=True):
                 pyautogui.click()
                 hf.move_mouse_away_from_overview()
-    create_fleet_advert()
+    if IS_FC:
+        create_fleet_advert()
     hf.select_broadcasts()
     hf.clear_broadcast_history()
     hf.move_mouse_away_from_overview()
