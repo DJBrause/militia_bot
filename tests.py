@@ -124,6 +124,7 @@ class TestFleetCommunication:
         hf.select_broadcasts()
         hf.clear_broadcast_history()
         cc.broadcast_in_position()
+        time.sleep(0.1)
         result = test_if_correct_broadcast_was_sent('in position')
 
         assert result is True
@@ -136,6 +137,7 @@ class TestFleetCommunication:
         hf.select_broadcasts()
         hf.clear_broadcast_history()
         cc.broadcast_hold_position()
+        time.sleep(0.1)
         result = test_if_correct_broadcast_was_sent('hold')
 
         assert result is True
@@ -148,6 +150,7 @@ class TestFleetCommunication:
         hf.select_broadcasts()
         hf.clear_broadcast_history()
         cc.broadcast_enemy_spotted()
+        time.sleep(0.1)
         result = test_if_correct_broadcast_was_sent('spotted')
 
         assert result is True
