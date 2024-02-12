@@ -153,7 +153,7 @@ class TestFleetCommunication:
         assert result is True
 
     @pytest.mark.parametrize("system", AMARR_SYSTEMS + MINMATAR_SYSTEMS + [HOME_SYSTEM])
-    def test_travel_to_broadcast(self, system):
+    def test_travel_to_broadcasts(self, system):
         if not sig.check_if_in_fleet():
             cc.form_fleet()
             time.sleep(0.1)

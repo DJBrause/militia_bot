@@ -270,7 +270,6 @@ def travel_to_destination_as_fc() -> None:
     hf.select_broadcasts()
     cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
-    time.sleep(PAUSE_AFTER_DESTINATION_BROADCAST)
     if hf.generic_variables.destination:
         for _ in range(MAX_NUMBER_OF_ATTEMPTS):
             if not sig.check_if_destination_system_was_reached(hf.generic_variables.destination, SCANNER_REGION):

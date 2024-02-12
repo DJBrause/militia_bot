@@ -66,8 +66,6 @@ def fc_behaviour_at_the_site() -> None:
 
         if (time.time() - start_time) > TIMEOUT_DURATION:
             logging.info("15 minutes have passed. I got bored. Moving on.")
-            nm.warp_to_safe_spot()
-            nm.wait_for_warp_to_end()
             break
 
         hf.beep_x_times(1)
@@ -310,7 +308,6 @@ def reaction_to_possible_interception() -> None:
 
 
 def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
-    # Decides whether jump through acceleration gate was successful or intercepted and act accordingly.
     if wait_for_warp_to_end:
         nm.wait_for_warp_to_end()
     hf.select_fw_tab()
@@ -318,12 +315,22 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
     nm.wait_for_warp_to_end()
     hf.move_mouse_away_from_overview()
 
-    if IS_FC is True:
+    if IS_FC:
         fc_behaviour_at_the_site()
-    # else:
-    #     reaction_to_possible_interception()
     else:
         fm_behaviour_at_the_site()
+
+
+def explore_and_engage_outside_scan_range():
+    sites = sig.get_sites_within_and_outside_scan_range('scout')
+    if sites['sites_outside_scan_range']:
+        bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][1][0],
+                                                          OVERVIEW_REGION)
+        nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
+        time.sleep(4)
+        nm.wait_for_warp_to_end()
+        if not sig.make_a_short_range_three_sixty_scan():
+            engage_site_protocol(wait_for_warp_to_end=False)
 
 
 def fc_mission_plan() -> None:
@@ -335,16 +342,8 @@ def fc_mission_plan() -> None:
         elif sig.check_probe_scanner_and_try_to_activate_site('scout'):
             if scan_site_and_warp_to_70_if_empty('scout'):
                 engage_site_protocol()
-        else:
-            sites = sig.get_sites_within_and_outside_scan_range('scout')
-            if sites['sites_outside_scan_range']:
-                bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][1][0],
-                                                                  OVERVIEW_REGION)
-                nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
-                time.sleep(4)
-                nm.wait_for_warp_to_end()
-                if not sig.make_a_short_range_three_sixty_scan():
-                    engage_site_protocol(wait_for_warp_to_end=False)
+            else:
+                explore_and_engage_outside_scan_range()
 
     nm.travel_home()
     logging.info("Mission plan ended.")
@@ -363,4 +362,3 @@ def fm_mission_plan() -> None:
     logging.info(f"New destination was set for home: {HOME_SYSTEM}.")
     nm.travel_home()
     logging.info("Mission plan ended.")
-
