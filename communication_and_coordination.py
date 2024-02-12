@@ -109,7 +109,7 @@ def broadcast_in_position() -> None:
     # In order to avoid this an empty space needs to be clicked somewhere.
     hf.move_mouse_away_from_overview()
     pyautogui.click()
-    time.sleep(0.1)
+    time.sleep(0.3)
     pyautogui.keyDown('.')
     time.sleep(0.1)
     pyautogui.keyUp('.')
@@ -256,14 +256,18 @@ def wait_for_fleet_members_to_join_and_broadcast_destination() -> None:
     broadcast_destination()
 
 
-def warp_to_member_if_enemy_is_spotted() -> None:
+def warp_to_member_if_enemy_is_spotted() -> bool:
     logging.info("Checking for 'enemy spotted' broadcast.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
     broadcast = hf.search_for_string_in_region('spotted', SCANNER_REGION, screenshot, move_mouse_to_string=True)
     if broadcast:
         logging.info("'Enemy spotted' broadcast detected. Warping to fleet member.")
         nm.warp_within_70_km(broadcast, SCANNER_REGION)
-
+        # broadcast_in_position is needed to obscure the last broadcast sent just above the broadcast icons
+        broadcast_in_position()
+        hf.clear_broadcast_history()
+        return True
+    return False
 
 def fm_warps_to_fc_and_engages_target() -> None:
     nm.wait_for_warp_to_end()

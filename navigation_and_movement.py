@@ -60,6 +60,7 @@ def choose_system_to_travel_to(systems: list) -> str:
 
 
 def dock_at_station() -> bool:
+    logging.info("Attempting to dock at station.")
     stations = [DESTINATION_HOME_STATION, DESTINATION_STATION]
     hf.select_stations_and_beacons_tab()
     time.sleep(0.2)
@@ -74,8 +75,10 @@ def dock_at_station() -> bool:
                 pyautogui.keyDown('d')
                 pyautogui.click()
                 pyautogui.keyUp('d')
+                logging.info("Station found, attempting to warp and dock.")
                 return True
         except pyautogui.ImageNotFoundException:
+            logging.warning("Station was not found.")
             return False
 
 
@@ -277,18 +280,13 @@ def travel_to_destination_as_fleet_member(initial_run: bool = True) -> None:
     if initial_run:
         if not sig.check_if_in_fleet():
             cc.join_existing_fleet()
-        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-            if hf.select_broadcasts():
-                break
-            else:
-                logging.warning("Cannot locate broadcasts.")
-                time.sleep(2)
+        if not hf.select_broadcasts():
+            logging.error("Cannot locate broadcasts.")
         if sig.check_if_docked():
             undock()
             time.sleep(20)
-        for _ in range(MAX_NUMBER_OF_ATTEMPTS):
-            if hf.select_fleet_tab():
-                break
+        if not hf.select_fleet_tab():
+            logging.error("Cannot locate fleet tab.")
         cc.broadcast_in_position()
         time.sleep(2)
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
