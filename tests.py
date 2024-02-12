@@ -1,4 +1,4 @@
-import pprint
+import pytest
 
 import pyautogui
 import pyscreeze
@@ -14,7 +14,7 @@ from constants import (
     SELECTED_ITEM_REGION, SCANNER_REGION, UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
     SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL, RAT_ICON,
     GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER, MORE_ICON, DEFAULT_CONFIDENCE,
-    LOCAL_REGION, SYSTEMS_TO_TRAVEL_TO
+    LOCAL_REGION, SYSTEMS_TO_TRAVEL_TO, AMARR_SYSTEMS, MINMATAR_SYSTEMS, HOME_SYSTEM
 )
 import scanning_and_information_gathering as sig
 
@@ -128,27 +128,42 @@ class TestFleetCommunication:
 
         assert result is True
 
-    def test_travel_to_broadcast(self):
-        systems = SYSTEMS_TO_TRAVEL_TO.copy()
+    def test_hold_position_broadcast(self):
         if not sig.check_if_in_fleet():
             cc.form_fleet()
             time.sleep(0.1)
         hf.select_fleet_tab()
         hf.select_broadcasts()
         hf.clear_broadcast_history()
-        nm.set_destination(systems)
-        cc.broadcast_destination()
-        result = test_if_correct_broadcast_was_sent(hf.generic_variables.destination)
+        cc.broadcast_hold_position()
+        result = test_if_correct_broadcast_was_sent('hold')
 
         assert result is True
 
-    def test_set_destination_from_broadcast(self):
-        hf.generic_variables.destination = ''
+    def test_enemy_spotted_broadcast(self):
         if not sig.check_if_in_fleet():
             cc.form_fleet()
             time.sleep(0.1)
         hf.select_fleet_tab()
         hf.select_broadcasts()
-        result = nm.set_destination_from_broadcast()
+        hf.clear_broadcast_history()
+        cc.broadcast_enemy_spotted()
+        result = test_if_correct_broadcast_was_sent('spotted')
 
         assert result is True
+
+    @pytest.mark.parametrize("system", AMARR_SYSTEMS + MINMATAR_SYSTEMS + [HOME_SYSTEM])
+    def test_travel_to_broadcast(self, system):
+        if not sig.check_if_in_fleet():
+            cc.form_fleet()
+            time.sleep(0.1)
+        hf.select_fleet_tab()
+        hf.select_broadcasts()
+        hf.clear_broadcast_history()
+        nm.set_destination([system])
+        cc.broadcast_destination()
+        broadcast_was_sent = test_if_correct_broadcast_was_sent(hf.generic_variables.destination)
+        hf.generic_variables.destination = ''
+        broadcast_was_received = nm.set_destination_from_broadcast(test_mode=True)
+        assert broadcast_was_sent is True
+        assert broadcast_was_received is True

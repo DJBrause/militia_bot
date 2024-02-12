@@ -84,7 +84,7 @@ GALLENTE_T1_CRUISERS = ["Celestis", "Exequror", "Thorax", "Vexor"]
 MINMATAR_T1_CRUISERS = ["Bellicose", "Rupture", "Scythe", "Stabber"]
 T1_CRUISERS = AMARR_T1_CRUISERS + CALDARI_T1_CRUISERS + GALLENTE_T1_CRUISERS + MINMATAR_T1_CRUISERS
 AVOID = ['Slicer', 'Vigil', 'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill', 'Hookbill']
-MINMATAR_SYSTEMS = ['Roushzar'] #['Kourmonen', 'Huola', 'Sosala', 'Anka', 'Lamaa']
+MINMATAR_SYSTEMS = ['Roushzar', 'Huola', 'Sosala', 'Lamaa']
 AMARR_SYSTEMS = ['Kamela', 'Kourmonen', 'Anka']
 # Make sure these are the same for both FC and FM, otherwise FM might not find the system to travel to at all.
 SYSTEMS_TO_TRAVEL_TO = AMARR_SYSTEMS

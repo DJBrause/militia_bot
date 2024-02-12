@@ -269,6 +269,7 @@ def warp_to_member_if_enemy_is_spotted() -> bool:
         return True
     return False
 
+
 def fm_warps_to_fc_and_engages_target() -> None:
     nm.wait_for_warp_to_end()
     nm.jump_through_acceleration_gate()

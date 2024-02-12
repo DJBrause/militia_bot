@@ -9,7 +9,7 @@ from constants import (
     DESTINATION_HOME_STATION, DESTINATION_STATION, GATE_ON_ROUTE, CAPACITOR_REGION, IS_FC,
     HOME_SYSTEM, MAX_EXPECTED_TRAVEL_DISTANCE, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION,
     OVERVIEW_REGION, PC_SPECIFIC_CONFIDENCE, SCANNER_REGION, TOP_LEFT_REGION, SYSTEMS_TO_TRAVEL_TO,
-    PAUSE_AFTER_DESTINATION_BROADCAST
+    PAUSE_AFTER_DESTINATION_BROADCAST, AMARR_SYSTEMS, MINMATAR_SYSTEMS
 )
 
 import communication_and_coordination as cc
@@ -173,10 +173,15 @@ def set_destination(systems: list) -> bool:
     return True
 
 
-def set_destination_from_broadcast() -> bool:
+def set_destination_from_broadcast(test_mode: bool = False) -> bool:
     logging.info("Trying to obtain destination from broadcast.")
     screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-    for system in SYSTEMS_TO_TRAVEL_TO:
+    if test_mode:
+        destination_systems = AMARR_SYSTEMS + MINMATAR_SYSTEMS + [HOME_SYSTEM]
+    else:
+        destination_systems = SYSTEMS_TO_TRAVEL_TO.copy()
+
+    for system in destination_systems:
         if hf.search_for_string_in_region(system, SCANNER_REGION, screenshot, move_mouse_to_string=True):
             hf.generic_variables.destination = system
             pyautogui.rightClick()
