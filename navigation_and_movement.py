@@ -189,7 +189,7 @@ def set_destination_from_broadcast(test_mode: bool = False) -> bool:
             screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
             hf.search_for_string_in_region('dest', SCANNER_REGION, screenshot, move_mouse_to_string=True)
             pyautogui.click()
-            logging.info("Traveling to new destination.")
+            logging.info(f"Traveling to new destination: {hf.generic_variables.destination}.")
             return True
     logging.error("Could not read destination from broadcast.")
     return False
