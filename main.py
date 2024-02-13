@@ -29,5 +29,4 @@ def main() -> None:
 if __name__ == "__main__":
     hf.beep_x_times(1)
     atexit.register(hf.turn_recording_on_or_off)
-    # main()
-    ptc.explore_and_engage_outside_scan_range()
+    main()
