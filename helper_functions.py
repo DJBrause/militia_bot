@@ -94,7 +94,7 @@ def extract_pilot_names_and_ship_types_from_screenshot() -> List[Tuple[str, Any]
         name_column_x_coordinate = [entry[0][0][0] for entry in sorted_output if entry[1] == 'Name'][0]
         logging.debug(f"sorted_output = {sorted_output}")
         name_and_ship_type_pair = [(clean_up_spaces(name[1]), ship_type[:2]) for ship_type in sorted_output
-                                   if ship_type[1] in ALL_FRIGATES + ALL_DESTROYERS
+                                   if clean_up_spaces(ship_type[1]) in ALL_FRIGATES + ALL_DESTROYERS
                                    for name in sorted_output if name_column_x_coordinate - MAX_PIXEL_SPREAD
                                    <= name[0][0][0] <= name_column_x_coordinate + MAX_PIXEL_SPREAD and
                                    ship_type[0][0][1] - MAX_PIXEL_SPREAD <= name[0][0][1] <=
