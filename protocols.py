@@ -323,8 +323,9 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
 
 def explore_and_engage_outside_scan_range():
     sites = sig.get_sites_within_and_outside_scan_range('scout')
+    print(sites['sites_outside_scan_range'])
     if sites['sites_outside_scan_range']:
-        bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][1][0],
+        bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][0][1][0],
                                                           OVERVIEW_REGION)
         nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
         time.sleep(4)

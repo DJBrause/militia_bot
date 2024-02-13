@@ -203,6 +203,7 @@ def set_destination_home(initial_run: bool = False) -> None:
                                       screenshot,
                                       move_mouse_to_string=True):
         pyautogui.click()
+        logging.info("Destination set to home system.")
     elif initial_run is False:
         screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
         hf.search_for_string_in_region('character', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
