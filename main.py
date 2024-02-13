@@ -28,6 +28,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    main()
-
+    # main()
+    nm.dock_at_station()
 

@@ -63,7 +63,7 @@ def dock_at_station() -> bool:
     logging.info("Attempting to dock at station.")
     stations = [DESTINATION_HOME_STATION, DESTINATION_STATION]
     hf.select_stations_and_beacons_tab()
-    time.sleep(0.2)
+    time.sleep(0.5)
     for station in stations:
         try:
             docking_station = pyautogui.locateCenterOnScreen(station,
@@ -198,7 +198,7 @@ def set_destination_from_broadcast(test_mode: bool = False) -> bool:
 def set_destination_home(initial_run: bool = False) -> None:
     pyautogui.hotkey('alt', 'a', interval=0.1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
-    if hf.search_for_string_in_region('set destination',
+    if hf.search_for_string_in_region('destination',
                                       MID_TO_TOP_REGION,
                                       screenshot,
                                       move_mouse_to_string=True):
