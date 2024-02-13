@@ -64,8 +64,8 @@ CALDARI_FRIGATES = ['Condor', 'Bantam', 'Griffin', 'Kestrel', 'Merlin', 'Heron',
                     'Caldari Navy Hookbill', 'Heron Navy Issue', 'Hookbill']
 GALLENTE_FRIGATES = ['Atron', 'Navitas', 'Tristan', 'Incursus', 'Maulus', 'Imicus', 'Federation Navy Comet',
                      'Maulus Navy Issue', 'Imicus Navy Issue', 'Comet', 'Federation']
-MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Reaper', 'Republic Fleet Firetail', 'Vigil',
-                     'Vigil Fleet Issue', 'Probe Fleet Issue']
+MINMATAR_FRIGATES = ['Slasher', 'Burst', 'Breacher', 'Rifter', 'Probe', 'Firetail', 'Republic Fleet Firetail', 'Vigil',
+                     'Vigil Fleet Issue', 'Probe Fleet Issue', 'Republic']
 ROOKIE_SHIPS = ['Ibis', 'Reaper', 'Impairor', 'Velator']
 MINER_FRIGATE = ['Venture']
 NPC_MINMATAR = ['Frigate']
