@@ -322,16 +322,18 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
 
 
 def explore_and_engage_outside_scan_range():
-    sites = sig.get_sites_within_and_outside_scan_range('scout')
-    print(sites['sites_outside_scan_range'])
-    if sites['sites_outside_scan_range']:
-        bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][0][1][0],
-                                                          OVERVIEW_REGION)
-        nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
-        time.sleep(4)
-        nm.wait_for_warp_to_end()
-        if not sig.make_a_short_range_three_sixty_scan():
-            engage_site_protocol(wait_for_warp_to_end=False)
+    try:
+        sites = sig.get_sites_within_and_outside_scan_range('scout')
+        if sites['sites_outside_scan_range']:
+            bounding_box = hf.bounding_box_center_coordinates(sites['sites_outside_scan_range'][0][1][0],
+                                                              OVERVIEW_REGION)
+            nm.warp_within_70_km(bounding_box, OVERVIEW_REGION)
+            time.sleep(4)
+            nm.wait_for_warp_to_end()
+            if not sig.make_a_short_range_three_sixty_scan():
+                engage_site_protocol(wait_for_warp_to_end=False)
+    except Exception as e:
+        logging.critical(f"Following critical error occurred in explore_and_engage_outside_scan_range: {e}")
 
 
 def fc_mission_plan() -> None:
