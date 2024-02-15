@@ -204,6 +204,8 @@ def set_destination_home_using_character_sheet(initial_run: bool = False) -> boo
                                       move_mouse_to_string=True):
         pyautogui.click()
         logging.info("Destination set to home system.")
+        hf.generic_variables.destination = HOME_SYSTEM
+        pyautogui.hotkey('alt', 'a', interval=0.1)
         return True
     elif not initial_run:
         screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
@@ -214,10 +216,10 @@ def set_destination_home_using_character_sheet(initial_run: bool = False) -> boo
         pyautogui.click()
         set_destination_home_using_character_sheet(True)
     else:
+        pyautogui.hotkey('alt', 'a', interval=0.1)
         return False
 
-    pyautogui.hotkey('alt', 'a', interval=0.1)
-    hf.generic_variables.destination = HOME_SYSTEM
+
 
 
 def set_destination_using_link() -> bool:
