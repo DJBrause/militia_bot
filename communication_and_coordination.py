@@ -81,8 +81,6 @@ def broadcast_destination(retry: bool = False) -> bool:
             hf.move_mouse_away_from_overview()
 
         hf.open_or_close_notepad()
-        # The below sleep time is necessary for the FM to be able to locate and select the destination before 'in position'
-        # broadcast is sent by FC.
 
         if test.test_if_correct_broadcast_was_sent('travel'):
             logging.info(f"Destination broadcast to {hf.generic_variables.destination} sent")
@@ -105,7 +103,7 @@ def broadcast_enemy_spotted() -> None:
 
 def broadcast_in_position() -> None:
     # Apparently if '.' is pressed after selecting broadcasts, it expands the menu right below broadcast tab.
-    # In order to avoid this an empty space needs to be clicked somewhere.
+    # In order to avoid this bug an empty space needs to be clicked somewhere.
     hf.move_mouse_away_from_overview()
     pyautogui.click()
     time.sleep(0.3)
@@ -143,7 +141,8 @@ def align_to_broadcast_reaction() -> bool:
             hf.clear_broadcast_history()
             logging.info("Align to broadcast found.")
             return True
-        elif hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, selected_result=1, move_mouse_to_string=True, debug=True):
+        elif hf.search_for_string_in_region('align', SCANNER_REGION, screenshot, selected_result=1,
+                                            move_mouse_to_string=True, debug=True):
             pyautogui.click()
             # Sending broadcast_in_position in order to occlude the "align to" broadcast below broadcast history.
             broadcast_in_position()
@@ -275,9 +274,3 @@ def warp_to_member_if_enemy_is_spotted() -> bool:
         hf.clear_broadcast_history()
         return True
     return False
-
-
-def fm_warps_to_fc_and_engages_target() -> None:
-    nm.wait_for_warp_to_end()
-    nm.jump_through_acceleration_gate()
-    nm.wait_for_warp_to_end()

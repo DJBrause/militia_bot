@@ -5,7 +5,7 @@ import logging
 from constants import (
     PROP_MOD, GUNS, OVERVIEW_REGION, SYSTEMS_TO_TRAVEL_TO, REPAIRER_EQUIPPED, MAX_NUMBER_OF_ATTEMPTS, DRONES_EQUIPPED,
     NPC_MINMATAR, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, DEFAULT_CONFIDENCE, SHORT_SCAN_THRESHOLD, TIMEOUT_DURATION,
-    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM
+    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM, OFFENSIVE_PLEXING
 )
 
 import communication_and_coordination as cc
@@ -26,7 +26,7 @@ def fc_behaviour_at_the_site() -> None:
         engage_actions()
         restore_graphics_and_reload_ammo()
 
-        if DRONES_EQUIPPED is True:
+        if DRONES_EQUIPPED:
             hf.return_drones_to_bay()
 
         short_range_scan_result, enemy_on_scan = perform_scan_protocol(hf.generic_variables.initial_scan, enemy_on_scan)
@@ -146,6 +146,7 @@ def engage_rat() -> None:
 
 
 def attempt_to_select_the_enemy(name: str) -> bool:
+    # This function attempts to populate the Selected Item window with the intended target based on Overview screenshot
     logging.info(f"Attempting to select: {name}")
     hf.move_mouse_away_from_overview()
     original_and_split_names = [name] + name.split()
@@ -154,16 +155,23 @@ def attempt_to_select_the_enemy(name: str) -> bool:
         if hf.search_for_string_in_region(item, OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
             pyautogui.click()
             time.sleep(0.1)
-            if test.test_if_target_in_selected_items(item):
-                nm.approach()
-                if not hf.generic_variables.prop_module_on:
-                    time.sleep(0.1)
-                    pyautogui.press(PROP_MOD)
-                    hf.generic_variables.prop_module_on = True
-                time.sleep(0.1)
-                hf.move_mouse_away_from_overview()
+            if engage_target_and_approach(item):
                 return True
     logging.info("Enemy is no longer present in the overview.")
+    return False
+
+
+def engage_target_and_approach(item: str) -> bool:
+    # Engages the target and initiates approach if present in selected items.
+    if test.test_if_target_in_selected_items(item):
+        nm.approach()
+        if not hf.generic_variables.prop_module_on:
+            time.sleep(0.1)
+            pyautogui.press(PROP_MOD)
+            hf.generic_variables.prop_module_on = True
+        time.sleep(0.1)
+        hf.move_mouse_away_from_overview()
+        return True
     return False
 
 
@@ -185,7 +193,7 @@ def attempt_to_target_lock_the_enemy(name: str) -> bool:
 
 def engagement_protocol(name: str) -> bool:
     logging.info("Engagement protocol is active.")
-    if DRONES_EQUIPPED is True:
+    if DRONES_EQUIPPED:
         hf.launch_drones()
     if attempt_to_select_the_enemy(name):
         if not attempt_to_target_lock_the_enemy(name):
@@ -200,10 +208,10 @@ def engagement_protocol(name: str) -> bool:
 
 
 def engage_actions():
-    # Perform engagement actions
-    measure_engage_rat = time.time()
-    engage_rat()
-    logging.debug(f"measure_engage_rat = {time.time() - measure_engage_rat}")
+    if OFFENSIVE_PLEXING:
+        measure_engage_rat = time.time()
+        engage_rat()
+        logging.debug(f"measure_engage_rat = {time.time() - measure_engage_rat}")
 
     measure_engage_hostiles = time.time()
     engage_hostiles()
@@ -223,7 +231,7 @@ def maintain_engagement(name: str) -> None:
             detected_hostiles = sig.check_overview_for_hostiles()
             if detected_hostiles:
                 return
-        if REPAIRER_EQUIPPED is True and time.time() - start >= REPAIRER_CYCLE_TIME:
+        if REPAIRER_EQUIPPED and time.time() - start >= REPAIRER_CYCLE_TIME:
             sig.check_health_and_decide_if_to_repair()
 
 
@@ -232,7 +240,7 @@ def handle_locked_target() -> None:
     nm.approach()
     time.sleep(0.1)
     hf.tackle_enemy_ship()
-    if DRONES_EQUIPPED is True:
+    if DRONES_EQUIPPED:
         hf.order_drones_to_engage()
 
 
@@ -272,6 +280,8 @@ def handle_enemy_selection(name: str) -> bool:
 
 
 def scan_site_and_warp_to_70_if_empty(site_type: str) -> bool:
+    # The purpose of this function is to scan the site if it is within the 14.3 AU limit and to warp to 70km
+    # from the acceleration gate.
     logging.info("Scanning site in range and warping to 70km if it is empty.")
     hf.select_stations_and_beacons_tab()
     try:
@@ -307,11 +317,13 @@ def reaction_to_possible_interception() -> None:
     nm.warp_to_safe_spot()
 
 
-def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
+def decide_site_protocol_and_engage(wait_for_warp_to_end: bool = True) -> None:
+    # Once at the site this function decides if FC or FM protocol should be used
     if wait_for_warp_to_end:
         nm.wait_for_warp_to_end()
     hf.select_fw_tab()
     nm.jump_through_acceleration_gate()
+
     nm.wait_for_warp_to_end()
     hf.move_mouse_away_from_overview()
 
@@ -322,6 +334,8 @@ def engage_site_protocol(wait_for_warp_to_end: bool = True) -> None:
 
 
 def explore_and_engage_outside_scan_range():
+    # If a searched site is present in the system, but outside scan range, the ship will warp to 70km away from the site
+    # and make a short range scan to ensure noone is inside.
     try:
         sites = sig.get_sites_within_and_outside_scan_range('scout')
         if sites['sites_outside_scan_range']:
@@ -331,7 +345,7 @@ def explore_and_engage_outside_scan_range():
             time.sleep(4)
             nm.wait_for_warp_to_end()
             if not sig.make_a_short_range_three_sixty_scan():
-                engage_site_protocol(wait_for_warp_to_end=False)
+                decide_site_protocol_and_engage(wait_for_warp_to_end=False)
     except Exception as e:
         logging.critical(f"Following critical error occurred in explore_and_engage_outside_scan_range: {e}")
 
@@ -341,10 +355,10 @@ def fc_mission_plan() -> None:
         nm.travel_to_destination_as_fc()
         cc.await_fleet_members_to_arrive()
         if scan_site_and_warp_to_70_if_empty('scout'):
-            engage_site_protocol()
+            decide_site_protocol_and_engage()
         elif sig.check_probe_scanner_and_try_to_activate_site('scout'):
             if scan_site_and_warp_to_70_if_empty('scout'):
-                engage_site_protocol()
+                decide_site_protocol_and_engage()
             else:
                 explore_and_engage_outside_scan_range()
 
@@ -358,7 +372,7 @@ def fm_mission_plan() -> None:
         if hf.generic_variables.destination.lower() == HOME_SYSTEM[0].lower():
             break
         if cc.await_command_decision_on_safe_spot():
-            engage_site_protocol()
+            decide_site_protocol_and_engage()
         else:
             nm.travel_to_destination_as_fleet_member(False)
 
