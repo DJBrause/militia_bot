@@ -63,7 +63,7 @@ def broadcast_current_location() -> None:
 def broadcast_destination(retry: bool = False) -> bool:
     if hf.generic_variables.destination is not None:
         hf.open_or_close_notepad()
-        time.sleep(1)
+        time.sleep(0.5)
         screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
         hf.search_for_string_in_region(hf.generic_variables.destination,
                                        TOP_LEFT_REGION,

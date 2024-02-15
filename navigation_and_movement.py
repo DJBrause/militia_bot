@@ -195,7 +195,7 @@ def set_destination_from_broadcast(test_mode: bool = False) -> bool:
     return False
 
 
-def set_destination_home(initial_run: bool = False) -> None:
+def set_destination_home_using_character_sheet(initial_run: bool = False) -> bool:
     pyautogui.hotkey('alt', 'a', interval=0.1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
     if hf.search_for_string_in_region('destination',
@@ -204,17 +204,40 @@ def set_destination_home(initial_run: bool = False) -> None:
                                       move_mouse_to_string=True):
         pyautogui.click()
         logging.info("Destination set to home system.")
-    elif initial_run is False:
+        return True
+    elif not initial_run:
         screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
         hf.search_for_string_in_region('character', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
         pyautogui.click()
         screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
         hf.search_for_string_in_region('home station', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
         pyautogui.click()
-        set_destination_home(True)
+        set_destination_home_using_character_sheet(True)
+    else:
+        return False
 
     pyautogui.hotkey('alt', 'a', interval=0.1)
     hf.generic_variables.destination = HOME_SYSTEM
+
+
+def set_destination_using_link() -> bool:
+    hf.open_or_close_notepad()
+    time.sleep(0.2)
+    screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
+    if not hf.search_for_string_in_region(HOME_SYSTEM, TOP_LEFT_REGION, screenshot, move_mouse_to_string=True):
+        hf.open_or_close_notepad()
+        return False
+    pyautogui.rightClick()
+    time.sleep(0.2)
+    screenshot = hf.jpg_screenshot_of_the_selected_region(TOP_LEFT_REGION)
+    if not hf.search_for_string_in_region('destination', TOP_LEFT_REGION, screenshot, move_mouse_to_string=True):
+        hf.open_or_close_notepad()
+        return False
+    time.sleep(0.1)
+    pyautogui.click()
+    hf.generic_variables.destination = HOME_SYSTEM
+    hf.open_or_close_notepad()
+    return True
 
 
 def stop_ship() -> None:
@@ -226,10 +249,11 @@ def travel_home(fleet_up: bool = False) -> None:
     logging.info(f"Returning to home system: {HOME_SYSTEM}")
     if fleet_up:
         cc.form_fleet()
-    set_destination_home()
+    if not set_destination_home_using_character_sheet():
+        set_destination_using_link()
+
     if IS_FC is True:
         cc.broadcast_destination()
-
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if not sig.check_if_destination_system_was_reached(HOME_SYSTEM, SCANNER_REGION):
             travel_to_destination()
