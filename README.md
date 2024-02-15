@@ -9,6 +9,9 @@ The key libraries utilized in this project are:
 - **PyAutoGUI:** For image detection and automated interaction with EVE Online's graphical interface.
 - **EasyOCR:** For text recognition.
 
+⚠️ WARNING
+This is for educational Purposes only. Authors of this repository or associated repositories take no responsibility for its usage.
+
 ## Video
 
 [Link to Video Demonstration](https://youtu.be/jlyvgZKf9T8)
