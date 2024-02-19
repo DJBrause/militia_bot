@@ -1,4 +1,5 @@
 import ast
+import numpy as np
 import os
 from dotenv import load_dotenv
 
@@ -35,7 +36,11 @@ SCRAMBLER_ON_ICON_SMALL = 'images/scrambler_on_small.PNG'
 WEBIFIER_ON_ICON = 'images/webifier_on.PNG'
 WEBIFIER_ON_ICON_SMALL = 'images/web_small.PNG'
 LASER_ON = 'images/laser_on.PNG'
-LASER_ON_SMALL = 'images/laser_on.PNG'
+LASER_ON_SMALL = 'images/laser_on_small.PNG'
+SCRAMBLER_BUTTON = 'images/scrambler_button.PNG'
+WEBIFIER_BUTTON = 'images/webifier_button.PNG'
+PROP_MOD_BUTTON = 'images/prop_mod_button.PNG'
+REPAIRER_BUTTON = 'images/repairer_button.PNG'
 
 RAT_ICON = 'images/rat_icon.PNG'
 GATE_ON_ROUTE = 'images/gate_on_route.PNG'
@@ -44,6 +49,11 @@ DESTINATION_HOME_STATION = 'images/destination_home_station.PNG'
 DSCAN_SLIDER = 'images/dscan_slider.PNG'
 MORE_ICON = 'images/more_icon.PNG'
 
+MASK_LOWER_BAND = np.array([60, 140, 40])
+MASK_UPPER_BAND = np.array([90, 255, 255])
+
+GUNS_BUTTON_COORDS = ast.literal_eval(os.environ.get('GUNS_BUTTON_COORDS'))
+REPAIRER_BUTTON_COORDS = ast.literal_eval(os.environ.get('REPAIRER_BUTTON_COORDS'))
 SHIP_HEALTH_BARS_COORDS = ast.literal_eval(os.environ.get('SHIP_HEALTH_BARS_COORDS'))
 SCANNER_REGION = ast.literal_eval(os.environ.get('SCANNER_REGION'))
 CAPACITOR_REGION = ast.literal_eval(os.environ.get('CAPACITOR_REGION'))

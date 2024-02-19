@@ -1,9 +1,12 @@
+import cv2
 import keyboard
-import winsound
 import logging
+import numpy as np
 import pyautogui
 from easyocr import Reader
+import winsound
 
+from collections import defaultdict
 from dataclasses import dataclass, field
 import io
 from PIL import Image
@@ -12,10 +15,11 @@ import time
 from typing import List, Tuple, Union, Any
 
 from constants import (
-    SCANNER_REGION, MORE_ICON, DEFAULT_CONFIDENCE, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM, UNLOCK_TARGET_ICON,
+    SCANNER_REGION, MORE_ICON, GUNS_BUTTON_COORDS, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM, PC_SPECIFIC_CONFIDENCE,
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
-    MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, PC_SPECIFIC_CONFIDENCE,
-    SCRAMBLER_ON_ICON, SCRAMBLER_ON_ICON_SMALL, TARGETS_REGION
+    MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, CAPACITOR_REGION,
+    SCRAMBLER_BUTTON, WEBIFIER_BUTTON, PROP_MOD_BUTTON, REPAIRER_BUTTON, REPAIRER_BUTTON_COORDS, MASK_LOWER_BAND,
+    MASK_UPPER_BAND
 )
 
 import scanning_and_information_gathering as sig
@@ -38,6 +42,18 @@ class GenericVariables:
 
 
 generic_variables = GenericVariables()
+
+
+@dataclass
+class ButtonDetectionConfig:
+    initial_button_pixel_sums: defaultdict[dict] = field(default_factory=lambda: defaultdict(dict))
+    buttons_coordinates: defaultdict[dict] = field(default_factory=lambda: defaultdict(dict))
+
+
+button_detection_config = ButtonDetectionConfig()
+button_detection_config.buttons_coordinates = {'SCRAMBLER_BUTTON': None, 'WEBIFIER_BUTTON': None,
+                                               'PROP_MOD_BUTTON': None, 'REPAIRER_BUTTON': None,
+                                               'GUNS_BUTTON_COORDS': GUNS_BUTTON_COORDS}
 
 
 def bounding_box_center_coordinates(bounding_box: List, region: Tuple) -> [int, int]:
@@ -118,6 +134,41 @@ def get_and_return_system_name(region: Tuple) -> list:
     screenshot_of_top_left_corner = jpg_screenshot_of_the_selected_region(region)
     results = ocr_reader.readtext(screenshot_of_top_left_corner)
     return results
+
+
+def get_module_buttons_coordinates() -> None:
+    button_paths = {'SCRAMBLER_BUTTON': SCRAMBLER_BUTTON, 'WEBIFIER_BUTTON': WEBIFIER_BUTTON,
+                    'PROP_MOD_BUTTON': PROP_MOD_BUTTON, 'REPAIRER_BUTTON': REPAIRER_BUTTON}
+    for k, v in button_detection_config.buttons_coordinates.items():
+        if v is None:
+            try:
+                x, y, w, h = pyautogui.locateOnScreen(button_paths[k],
+                                                      grayscale=False,
+                                                      confidence=PC_SPECIFIC_CONFIDENCE,
+                                                      region=CAPACITOR_REGION)
+                region_tuple = (x, y, w, h)
+                region_tuple = tuple(int(parameter) for parameter in region_tuple)
+                button_detection_config.buttons_coordinates[k] = region_tuple
+            except pyautogui.ImageNotFoundException:
+                logging.error(f"Error in get_module_buttons_coordinates. Could not find image related to {k}")
+                if k == 'REPAIRER_BUTTON':
+                    button_detection_config.buttons_coordinates[k] = REPAIRER_BUTTON_COORDS
+
+
+def get_initial_button_pixel_sum(region: Tuple) -> int:
+    # Sets initial pixel sums of module button. This should be done when they are off.
+    screenshot = jpg_screenshot_of_the_selected_region(region)
+    hsv_screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv_screenshot, lowerb=MASK_LOWER_BAND, upperb=MASK_UPPER_BAND)
+    initial_pixel_sum = int(np.sum(mask))
+    return initial_pixel_sum
+
+
+def initialize_button_pixel_sums() -> None:
+    for button, region in button_detection_config.buttons_coordinates.items():
+        if region is not None:
+            initial_pixel_sum = get_initial_button_pixel_sum(region)
+            button_detection_config.initial_button_pixel_sums[button] = initial_pixel_sum
 
 
 def jpg_screenshot_of_the_selected_region(region: Tuple) -> Image:
