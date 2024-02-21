@@ -2,7 +2,7 @@ import atexit
 import time
 import logging
 
-from constants import IS_FC, PROP_MOD, REPAIRER
+from constants import IS_FC
 import helper_functions as hf
 import protocols as ptc
 
@@ -11,8 +11,6 @@ logging.basicConfig(filename='logfile.log',
                     filemode='w',
                     format="%(asctime)s %(levelname)s %(message)s")
 
-
-import pyautogui
 
 def main() -> None:
     hf.turn_recording_on_or_off()
@@ -25,15 +23,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    # atexit.register(hf.turn_recording_on_or_off)
-    # main()
-    start = time.time()
-    if not hf.button_detection_config.initial_button_pixel_sums:
-        hf.prepare_module_buttons_coordinates_and_initial_pixel_sums()
-    hf.remove_graphics()
-    while True:
+    atexit.register(hf.turn_recording_on_or_off)
+    main()
 
-        if not hf.is_module_active('REPAIRER_BUTTON',
-                                   hf.button_detection_config.buttons_coordinates['REPAIRER_BUTTON']):
-            pyautogui.press(REPAIRER)
-            hf.generic_variables.prop_module_on = True
