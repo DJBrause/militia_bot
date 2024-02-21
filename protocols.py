@@ -5,7 +5,7 @@ import logging
 from constants import (
     PROP_MOD, GUNS, OVERVIEW_REGION, SYSTEMS_TO_TRAVEL_TO, REPAIRER_EQUIPPED, MAX_NUMBER_OF_ATTEMPTS, DRONES_EQUIPPED,
     NPC_MINMATAR, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, DEFAULT_CONFIDENCE, SHORT_SCAN_THRESHOLD, TIMEOUT_DURATION,
-    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM, OFFENSIVE_PLEXING
+    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM, OFFENSIVE_PLEXING, SCRAMBLER_EQUIPPED, WEBIFIER_EQUIPPED, SCRAM, WEB
 )
 
 import communication_and_coordination as cc
@@ -227,12 +227,34 @@ def maintain_engagement(name: str) -> None:
         else:
             if not handle_unlocked_target(name):
                 return
+
         if name == NPC_MINMATAR[0]:
             detected_hostiles = sig.check_overview_for_hostiles()
             if detected_hostiles:
                 return
+
         if REPAIRER_EQUIPPED and time.time() - start >= REPAIRER_CYCLE_TIME:
-            sig.check_health_and_decide_if_to_repair()
+            sig.check_health_and_decide_if_to_repair_using_picture_detection()
+
+        if SCRAMBLER_EQUIPPED and not hf.is_module_active('SCRAMBLER_BUTTON',
+                                                          hf.button_detection_config.buttons_coordinates
+                                                          ['SCRAMBLER_BUTTON']):
+            pyautogui.press(SCRAM)
+
+        if WEBIFIER_EQUIPPED and not hf.is_module_active('WEBIFIER_BUTTON',
+                                                         hf.button_detection_config.buttons_coordinates
+                                                         ['WEBIFIER_BUTTON']):
+            pyautogui.press(WEB)
+
+        if not hf.is_module_active('PROP_MOD_BUTTON',
+                                   hf.button_detection_config.buttons_coordinates['PROP_MOD_BUTTON']):
+            pyautogui.press(PROP_MOD)
+            hf.generic_variables.prop_module_on = True
+
+        if not hf.is_module_active('GUNS_BUTTON_COORDS',
+                                   hf.button_detection_config.buttons_coordinates['GUNS_BUTTON_COORDS']):
+            pyautogui.press(GUNS)
+            hf.generic_variables.guns_activated = True
 
 
 def handle_locked_target() -> None:

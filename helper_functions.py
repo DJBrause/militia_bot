@@ -19,7 +19,7 @@ from constants import (
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
     MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, CAPACITOR_REGION,
     SCRAMBLER_BUTTON, WEBIFIER_BUTTON, PROP_MOD_BUTTON, REPAIRER_BUTTON, REPAIRER_BUTTON_COORDS, MASK_LOWER_BAND,
-    MASK_UPPER_BAND
+    MASK_UPPER_BAND, MAX_MODULE_ACTIVATION_CHECK_ATTEMPTS, LOWER_COLOR_THRESHOLD, UPPER_COLOR_THRESHOLD
 )
 
 import scanning_and_information_gathering as sig
@@ -150,9 +150,11 @@ def get_module_buttons_coordinates() -> None:
                 region_tuple = tuple(int(parameter) for parameter in region_tuple)
                 button_detection_config.buttons_coordinates[k] = region_tuple
             except pyautogui.ImageNotFoundException:
-                logging.error(f"Error in get_module_buttons_coordinates. Could not find image related to {k}")
                 if k == 'REPAIRER_BUTTON':
+                    logging.warning(f"Could not find image related to {k}. Using hard coded coordinates instead.")
                     button_detection_config.buttons_coordinates[k] = REPAIRER_BUTTON_COORDS
+                else:
+                    logging.error(f"Error in get_module_buttons_coordinates. Could not find image related to {k}")
 
 
 def get_initial_button_pixel_sum(region: Tuple) -> int:
@@ -169,6 +171,32 @@ def initialize_button_pixel_sums() -> None:
         if region is not None:
             initial_pixel_sum = get_initial_button_pixel_sum(region)
             button_detection_config.initial_button_pixel_sums[button] = initial_pixel_sum
+
+
+def is_module_active(key: str, region_tuple: tuple) -> bool:
+    logging.debug(f"{key, region_tuple}")
+    for _ in range(MAX_MODULE_ACTIVATION_CHECK_ATTEMPTS):
+        try:
+            screenshot = jpg_screenshot_of_the_selected_region(region_tuple)
+            hsv_screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv_screenshot, lowerb=LOWER_COLOR_THRESHOLD, upperb=UPPER_COLOR_THRESHOLD)
+            initial_pixel_sum = button_detection_config.initial_button_pixel_sums[key]
+            pixel_sum_in_mask = np.sum(mask)
+            logging.debug(f"initial_pixel_sum = {initial_pixel_sum}, pixel_sum_in_mask = {pixel_sum_in_mask}")
+            if pixel_sum_in_mask > initial_pixel_sum*1.1:
+                return True
+        except Exception as e:
+            logging.error(f"Error occurred in is_module_active function: {e}")
+    return False
+
+
+def prepare_module_buttons_coordinates_and_initial_pixel_sums() -> None:
+    logging.info("Obtaining module buttons regions and setting initial pixel sums.")
+    remove_graphics()
+    get_module_buttons_coordinates()
+    initialize_button_pixel_sums()
+    logging.debug(f"initial_button_pixel_sums = {button_detection_config.initial_button_pixel_sums.items()}")
+    remove_graphics()
 
 
 def jpg_screenshot_of_the_selected_region(region: Tuple) -> Image:

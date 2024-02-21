@@ -295,6 +295,8 @@ def travel_to_destination_as_fc() -> None:
     set_destination(SYSTEMS_TO_TRAVEL_TO)
     hf.select_fleet_tab()
     hf.select_broadcasts()
+    if not hf.button_detection_config.initial_button_pixel_sums:
+        hf.prepare_module_buttons_coordinates_and_initial_pixel_sums()
     cc.broadcast_hold_position()
     cc.wait_for_fleet_members_to_join_and_broadcast_destination()
     cc.wait_for_in_position_broadcast()
@@ -319,6 +321,8 @@ def travel_to_destination_as_fleet_member(initial_run: bool = True) -> None:
             time.sleep(20)
         if not hf.select_fleet_tab():
             logging.error("Cannot locate fleet tab.")
+        if not hf.button_detection_config.initial_button_pixel_sums:
+            hf.prepare_module_buttons_coordinates_and_initial_pixel_sums()
         cc.broadcast_in_position()
         hf.clear_broadcast_history()
         time.sleep(2)

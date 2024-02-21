@@ -476,7 +476,7 @@ def set_dscan_range_to_minimum() -> None:
     hf.move_mouse_away_from_overview()
 
 
-def check_health_and_decide_if_to_repair() -> None:
+def check_health_and_decide_if_to_repair_using_picture_detection() -> None:
     health = check_ship_status()
     time.sleep(0.1)
 
@@ -495,3 +495,18 @@ def check_health_and_decide_if_to_repair() -> None:
 
         except IndexError as e:
             logging.error(f"IndexError in check_health_and_decide_if_to_repair: {e}")
+
+
+def check_health_and_decide_if_to_repair_using_color_detection() -> None:
+    health = check_ship_status()
+
+    if health:
+        if health['armor'] != '100%' and not hf.is_module_active('REPAIRER_BUTTON',
+                                                                 hf.button_detection_config.buttons_coordinates['REPAIRER_BUTTON']):
+            logging.info("Damage detected. Turning repairer on.")
+            pyautogui.press(REPAIRER)
+
+        if health['armor'] == '100%' and hf.is_module_active('REPAIRER_BUTTON',
+                                                             hf.button_detection_config.buttons_coordinates['REPAIRER_BUTTON']):
+            logging.info("No damage detected. Turning repairer off.")
+            pyautogui.press(REPAIRER)
