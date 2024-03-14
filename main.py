@@ -5,6 +5,7 @@ import logging
 from constants import IS_FC
 import helper_functions as hf
 import protocols as ptc
+import navigation_and_movement as nm
 
 logging.basicConfig(filename='logfile.log',
                     level=logging.DEBUG,
@@ -25,4 +26,5 @@ if __name__ == "__main__":
     hf.beep_x_times(1)
     atexit.register(hf.turn_recording_on_or_off)
     main()
+    # nm.travel_home()
 

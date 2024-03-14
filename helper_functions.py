@@ -91,9 +91,9 @@ def clear_local_chat_content() -> bool:
             pyautogui.click()
             time.sleep(0.2)
             screenshot = jpg_screenshot_of_the_selected_region(LOCAL_REGION)
-            search_for_string_in_region('clear', LOCAL_REGION, screenshot, move_mouse_to_string=True)
-            pyautogui.click()
-            return True
+            if search_for_string_in_region('clear', LOCAL_REGION, screenshot, move_mouse_to_string=True):
+                pyautogui.click()
+                return True
         return False
     except pyautogui.ImageNotFoundException:
         logging.error("Could not find MORE_ICON")

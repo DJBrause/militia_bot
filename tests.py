@@ -170,3 +170,6 @@ class TestFleetCommunication:
         broadcast_was_received = nm.set_destination_from_broadcast(test_mode=True)
         assert broadcast_was_sent is True
         assert broadcast_was_received is True
+
+    def test_clear_local(self):
+        assert hf.clear_local_chat_content() is True
