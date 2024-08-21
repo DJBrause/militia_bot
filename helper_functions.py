@@ -5,6 +5,7 @@ import numpy as np
 import pyautogui
 from easyocr import Reader
 import winsound
+from requests import get as api_get
 
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -19,12 +20,15 @@ from constants import (
     OVERVIEW_REGION, WEBIFIER_EQUIPPED, WEB, COORDS_AWAY_FROM_OVERVIEW, ALL_DESTROYERS, ALL_FRIGATES,
     MAX_PIXEL_SPREAD, LOCK_TARGET_ICON, SELECTED_ITEM_REGION, MAX_NUMBER_OF_ATTEMPTS, CAPACITOR_REGION,
     SCRAMBLER_BUTTON, WEBIFIER_BUTTON, PROP_MOD_BUTTON, REPAIRER_BUTTON, REPAIRER_BUTTON_COORDS, MASK_LOWER_BAND,
-    MASK_UPPER_BAND, MAX_MODULE_ACTIVATION_CHECK_ATTEMPTS, LOWER_COLOR_THRESHOLD, UPPER_COLOR_THRESHOLD
+    MASK_UPPER_BAND, MAX_MODULE_ACTIVATION_CHECK_ATTEMPTS, LOWER_COLOR_THRESHOLD, UPPER_COLOR_THRESHOLD,
+    AMARR_FACTION_ID, MINMATAR_FACTION_ID, MINMATAR_AMARR_FW_SYSTEMS
 )
 
 import scanning_and_information_gathering as sig
 
 ocr_reader = Reader(['en'], gpu=True)
+
+FW_SYSTEMS_URL = 'https://esi.evetech.net/latest/fw/systems/?datasource=tranquility'
 
 
 @dataclass
@@ -443,4 +447,25 @@ def unlock_target() -> None:
     pyautogui.hotkey('ctrl', 'shift', interval=0.1)
 
 
+def get_amarr_systems():
+    amarr_controlled_fw_systems = []
+    fw_systems = api_get(FW_SYSTEMS_URL).json()
+    for system in fw_systems:
+        if system['owner_faction_id'] == AMARR_FACTION_ID:
+            amarr_controlled_fw_systems.append(get_system_name_based_on_system_id(system['solar_system_id']))
+    return amarr_controlled_fw_systems
 
+
+def get_minmatar_systems():
+    minmatar_controlled_fw_systems = []
+    fw_systems = api_get(FW_SYSTEMS_URL).json()
+    for system in fw_systems:
+        if system['owner_faction_id'] == MINMATAR_FACTION_ID:
+            minmatar_controlled_fw_systems.append(get_system_name_based_on_system_id(system['solar_system_id']))
+    return minmatar_controlled_fw_systems
+
+
+def get_system_name_based_on_system_id(system_id):
+    for system in MINMATAR_AMARR_FW_SYSTEMS:
+        if system[1] == system_id:
+            return system[0]

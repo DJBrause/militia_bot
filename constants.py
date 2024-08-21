@@ -5,6 +5,85 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+CALDARI_FACTION_ID = 500001
+MINMATAR_FACTION_ID = 500002
+AMARR_FACTION_ID = 500003
+GALLENTE_FACTION_ID = 500004
+
+# SYSTEM NAME, SYSTEM ID
+MINMATAR_AMARR_FW_SYSTEMS = [
+    ['Tzvi', 30002957],
+    ['Klogori', 30002097],
+    ['Todifrauan', 30002062],
+    ['Raa', 30002958],
+    ['Sifilar', 30002959],
+    ['Arzad', 30002960],
+    ['Oyeman', 30002961],
+    ['Ezzara', 30002962],
+    ['Roushzar', 30002975],
+    ['Labapi', 30002976],
+    ['Arayar', 30002977],
+    ['Asghed', 30002978],
+    ['Tararan', 30002979],
+    ['Sosan', 30002980],
+    ['Halmah', 30002981],
+    ['Bosboger', 30002514],
+    ['Lulm', 30002516],
+    ['Gulmorogod', 30002517],
+    ['Haras', 30003087],
+    ['Arnstur', 30002064],
+    ['Lasleinur', 30002065],
+    ['Amamake', 30002537],
+    ['Vard', 30002538],
+    ['Siseide', 30002539],
+    ['Lantorn', 30002540],
+    ['Dal', 30002541],
+    ['Auga', 30002542],
+    ['Brin', 30002067],
+    ['Lamaa', 30003063],
+    ['Huola', 30003067],
+    ['Kourmonen', 30003068],
+    ['Kamela', 30003069],
+    ['Sosala', 30003070],
+    ['Anka', 30003071],
+    ['Iesa', 30003072],
+    ['Uusanen', 30003077],
+    ['Saikamon', 30003079],
+    ['Resbroko', 30002056],
+    ['Hadozeko', 30002057],
+    ['Ardar', 30002058],
+    ['Auner', 30002059],
+    ['Evati', 30002060],
+    ['Ofstold', 30002061],
+    ['Sahtogas', 30003086],
+    ['Helgatild', 30002063],
+    ['Oyonata', 30003088],
+    ['Kurniainen', 30003089],
+    ['Saidusairos', 30003090],
+    ['Tannakan', 30003091],
+    ['Floseswin', 30002082],
+    ['Uisper', 30002083],
+    ['Aset', 30002084],
+    ['Eytjangard', 30002085],
+    ['Turnur', 30002086],
+    ['Isbrabata', 30002087],
+    ['Vimeini', 30002088],
+    ['Avenod', 30002089],
+    ['Frerstorn', 30002090],
+    ['Ontorn', 30002091],
+    ['Sirekur', 30002092],
+    ['Gebuladi', 30002093],
+    ['Ebolfer', 30002094],
+    ['Eszur', 30002095],
+    ['Hofjaldgund', 30002096],
+    ['Orfrold', 30002098],
+    ['Egmar', 30002099],
+    ['Taff', 30002100],
+    ['Ualkin', 30002101],
+    ['Gukarla', 30002102],
+    ['Arnher', 30002066]
+]
+
 FLEET_MEMBERS_COUNT = 0
 MAX_NUMBER_OF_ATTEMPTS = 30
 IS_FC = ast.literal_eval(os.environ.get('IS_FC'))

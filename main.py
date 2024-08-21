@@ -7,7 +7,9 @@ import helper_functions as hf
 import protocols as ptc
 import navigation_and_movement as nm
 
-logging.basicConfig(filename='logfile.log',
+logfile_name = 'logfile.log'
+
+logging.basicConfig(filename=logfile_name,
                     level=logging.DEBUG,
                     filemode='w',
                     format="%(asctime)s %(levelname)s %(message)s")
