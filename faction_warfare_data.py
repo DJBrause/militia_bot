@@ -106,6 +106,3 @@ def check_and_update_fw_data():
 
     with open(file_name, 'w') as file:
         json.dump(new_data, file, indent=4)
-
-
-check_and_update_fw_data()
