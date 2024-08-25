@@ -1,3 +1,4 @@
 .idea/
 *.iml
 .env
+.fw_data.json

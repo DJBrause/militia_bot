@@ -83,6 +83,8 @@ MINMATAR_AMARR_FW_SYSTEMS = [
     ['Gukarla', 30002102],
     ['Arnher', 30002066]
 ]
+FW_SYSTEMS_URL = 'https://esi.evetech.net/latest/fw/systems/?datasource=tranquility'
+
 
 FLEET_MEMBERS_COUNT = 0
 MAX_NUMBER_OF_ATTEMPTS = 30
@@ -181,7 +183,5 @@ T1_CRUISERS = AMARR_T1_CRUISERS + CALDARI_T1_CRUISERS + GALLENTE_T1_CRUISERS + M
 AVOID = ['Slicer', 'Vigil', 'Vigil Fleet Issue', 'Imperial Navy Slicer', 'Caldari Navy Hookbill', 'Hookbill',
          'Republic Fleet Firetail', 'Firetail']
 
-MINMATAR_SYSTEMS = ['Huola', 'Sosala', 'Lamaa', 'Roushzar']
-AMARR_SYSTEMS = ['Kamela', 'Kourmonen', 'Anka']
 # Make sure these are the same for both FC and FM, otherwise FM might not find the system to travel to at all.
-SYSTEMS_TO_TRAVEL_TO = AMARR_SYSTEMS
+SYSTEMS_TO_TRAVEL_TO = ['Kamela', 'Kourmonen', 'Anka', 'Huola', 'Sosala', 'Lamaa', 'Roushzar']

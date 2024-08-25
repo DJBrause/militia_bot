@@ -14,7 +14,7 @@ from constants import (
     SELECTED_ITEM_REGION, SCANNER_REGION, UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
     SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL, RAT_ICON,
     GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER, MORE_ICON, DEFAULT_CONFIDENCE,
-    LOCAL_REGION, SYSTEMS_TO_TRAVEL_TO, AMARR_SYSTEMS, MINMATAR_SYSTEMS, HOME_SYSTEM
+    LOCAL_REGION, SYSTEMS_TO_TRAVEL_TO, HOME_SYSTEM
 )
 import scanning_and_information_gathering as sig
 
@@ -155,7 +155,7 @@ class TestFleetCommunication:
 
         assert result is True
 
-    @pytest.mark.parametrize("system", AMARR_SYSTEMS + MINMATAR_SYSTEMS + [HOME_SYSTEM])
+    @pytest.mark.parametrize("system", SYSTEMS_TO_TRAVEL_TO + [HOME_SYSTEM])
     def test_travel_to_broadcasts(self, system):
         if not sig.check_if_in_fleet():
             cc.form_fleet()
