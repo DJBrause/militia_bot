@@ -4,6 +4,7 @@ import re
 import os
 import json
 from datetime import datetime, timedelta
+import logging
 
 from constants import FW_SYSTEMS_URL
 
@@ -67,11 +68,20 @@ def get_gate_data_based_on_stargate_id(stargate_id: int) -> dict:
     return stargate_data
 
 
-def check_and_update_fw_data() -> None:
+def check_and_update_fw_data():
+    logging.info("Checking if Faction Warfare data is up to date.")
     file_name = 'fw_data.json'
-    utc_now = datetime.utcnow()  # Get the current UTC time
+    utc_now = datetime.utcnow()
 
-    # Check if the file exists
+    # Determine the last reset time, which is 11:00 UTC of the current day or the previous day
+    reset_time_today = utc_now.replace(hour=11, minute=0, second=0, microsecond=0)
+
+    if utc_now < reset_time_today:
+        last_reset_time = reset_time_today - timedelta(days=1)
+    else:
+        last_reset_time = reset_time_today
+
+    logging.info("Check if the file exists.")
     if os.path.exists(file_name):
         with open(file_name, 'r') as file:
             data = json.load(file)
@@ -80,14 +90,15 @@ def check_and_update_fw_data() -> None:
             if timestamp:
                 last_update = datetime.fromisoformat(timestamp)
 
-                # Check if the timestamp is older than 24 hours
-                if utc_now - last_update < timedelta(hours=24):
-                    return  # Data is up-to-date, no need to update
+                logging.info("Check if the last update was before the last reset time.")
+                if last_update >= last_reset_time and utc_now - last_update < timedelta(hours=24):
+                    logging.info("Data is up-to-date, no need to update.")
+                    return
 
-    # Either the file doesn't exist, timestamp is missing, or data is outdated
+    logging.info("Either the file doesn't exist, timestamp is missing, or data is outdated.")
     frontline_systems = get_amarr_frontline_systems()
 
-    # Update the file with new data and timestamp
+    logging.info("Updating the file with new data and timestamp.")
     new_data = {
         'timestamp': utc_now.isoformat(),
         'frontline_systems': frontline_systems
@@ -95,3 +106,6 @@ def check_and_update_fw_data() -> None:
 
     with open(file_name, 'w') as file:
         json.dump(new_data, file, indent=4)
+
+
+check_and_update_fw_data()

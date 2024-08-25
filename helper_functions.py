@@ -5,7 +5,6 @@ import numpy as np
 import pyautogui
 from easyocr import Reader
 import winsound
-from requests import get as api_get
 
 from collections import defaultdict
 from dataclasses import dataclass, field
