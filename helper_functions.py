@@ -5,6 +5,7 @@ import numpy as np
 import pyautogui
 from easyocr import Reader
 import winsound
+import json
 
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -441,3 +442,18 @@ def turn_recording_on_or_off() -> None:
 def unlock_target() -> None:
     time.sleep(0.1)
     pyautogui.hotkey('ctrl', 'shift', interval=0.1)
+
+
+def get_amarr_frontline_systems_from_json() -> list:
+    file_name = 'fw_data.json'
+
+    logging.info("Getting list of Amarr frontline systems.")
+    try:
+        with open(file_name, 'r') as file:
+            data = json.load(file)
+            frontline_systems = data.get('frontline_systems', [])
+            logging.info("List of Amarr frontline systems was found.")
+            return frontline_systems
+    except FileNotFoundError:
+        logging.info(f"{file_name} does not exist.")
+        return []

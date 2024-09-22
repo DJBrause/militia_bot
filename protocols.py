@@ -372,9 +372,13 @@ def explore_and_engage_outside_scan_range():
         logging.critical(f"Following critical error occurred in explore_and_engage_outside_scan_range: {e}")
 
 
-def fc_mission_plan() -> None:
-    for _ in range(len(SYSTEMS_TO_TRAVEL_TO)):
-        nm.travel_to_destination_as_fc()
+def fc_mission_plan(defensive_plexing: bool) -> None:
+    destination_systems = list
+    if defensive_plexing:
+        amarr_frontline_systems = hf.get_amarr_frontline_systems_from_json()
+        destination_systems = [system for system in SYSTEMS_TO_TRAVEL_TO if system in amarr_frontline_systems]
+    for _ in range(len(destination_systems)):
+        nm.travel_to_destination_as_fc(destination_systems)
         cc.await_fleet_members_to_arrive()
         if scan_site_and_warp_to_70_if_empty('scout'):
             decide_site_protocol_and_engage()

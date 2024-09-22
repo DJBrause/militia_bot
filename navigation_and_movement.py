@@ -279,7 +279,7 @@ def travel_to_destination() -> None:
     hf.notification_beep()
 
 
-def travel_to_destination_as_fc() -> None:
+def travel_to_destination_as_fc(destination_systems: list) -> None:
     if sig.check_if_docked():
         if not sig.check_if_in_fleet():
             cc.form_fleet()
@@ -291,7 +291,7 @@ def travel_to_destination_as_fc() -> None:
             cc.form_fleet()
             time.sleep(0.1)
     # cannot broadcast destination while docked
-    set_destination(SYSTEMS_TO_TRAVEL_TO)
+    set_destination(destination_systems)
     hf.select_fleet_tab()
     hf.select_broadcasts()
     if not hf.button_detection_config.initial_button_pixel_sums:

@@ -19,7 +19,7 @@ def main() -> None:
     hf.turn_recording_on_or_off()
     time.sleep(8)
     if IS_FC:
-        ptc.fc_mission_plan()
+        ptc.fc_mission_plan(True)
     else:
         ptc.fm_mission_plan()
 

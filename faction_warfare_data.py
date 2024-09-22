@@ -95,7 +95,8 @@ def check_and_update_fw_data():
                     logging.info("Data is up-to-date, no need to update.")
                     return
 
-    logging.info("Either the file doesn't exist, timestamp is missing, or data is outdated.")
+    logging.info("Either the file doesn't exist, timestamp is missing, or data is outdated. "
+                 "Update will take over a minute.")
     frontline_systems = get_amarr_frontline_systems()
 
     logging.info("Updating the file with new data and timestamp.")
