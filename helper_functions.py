@@ -13,7 +13,8 @@ import io
 from PIL import Image
 import re
 import time
-from typing import List, Tuple, Union, Any
+import os
+from typing import List, Tuple, Union, Any, DefaultDict
 
 from constants import (
     SCANNER_REGION, MORE_ICON, GUNS_BUTTON_COORDS, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM, PC_SPECIFIC_CONFIDENCE,
@@ -47,8 +48,8 @@ generic_variables = GenericVariables()
 
 @dataclass
 class ButtonDetectionConfig:
-    initial_button_pixel_sums: defaultdict[dict] = field(default_factory=lambda: defaultdict(dict))
-    buttons_coordinates: defaultdict[dict] = field(default_factory=lambda: defaultdict(dict))
+    initial_button_pixel_sums: DefaultDict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+    buttons_coordinates: DefaultDict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 
 
 button_detection_config = ButtonDetectionConfig()
@@ -200,8 +201,15 @@ def prepare_module_buttons_coordinates_and_initial_pixel_sums() -> None:
     remove_graphics()
 
 
-def jpg_screenshot_of_the_selected_region(region: Tuple) -> Image:
+def jpg_screenshot_of_the_selected_region(region: Tuple, debug: bool = False) -> Image:
     screenshot = pyautogui.screenshot(region=region)
+    if debug:
+        project_path = os.getcwd()
+        filename = 'debug_screenshot.jpeg'
+        file_path = os.path.join(project_path, filename)
+        screenshot = pyautogui.screenshot(region=region)
+        screenshot.save(file_path, format="JPEG")
+        return
     temp_image = io.BytesIO()
     screenshot.save(temp_image, format="JPEG")
     temp_image.seek(0)

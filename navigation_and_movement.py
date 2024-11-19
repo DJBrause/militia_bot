@@ -204,7 +204,7 @@ def set_destination_home_using_character_sheet(initial_run: bool = False) -> boo
         pyautogui.click()
         logging.info("Destination set to home system.")
         hf.generic_variables.destination = HOME_SYSTEM
-        pyautogui.hotkey('alt', 'a', interval=0.1)
+        pyautogui.hotkey('ctrl', 'w', interval=0.1)
         return True
     elif not initial_run:
         screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)

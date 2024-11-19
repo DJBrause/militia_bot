@@ -57,10 +57,6 @@ def locate_window_by_name(ocr_results, window_name):
     return False, None
 
 
-window_coords = {window_name: locate_window_by_name(ocr_results, window_name) for window_name in window_names}
-print(window_coords)
-
-
 def find_selected_item_region():
     selected_item_data = window_coords['selected']
     overview_data = window_coords['overview']
@@ -216,20 +212,22 @@ def find_capacitor_region(tolerance=40, scan_height=100):
     return None
 
 
-# Example usage:
-yellow_region = find_capacitor_region()
+if __name__ == '__main__':
+    # Example usage:
+    yellow_region = find_capacitor_region()
 
+    window_coords = {window_name: locate_window_by_name(ocr_results, window_name) for window_name in window_names}
+    print(window_coords)
 
+    print(yellow_region)
 
-print(yellow_region)
+    # selected_item_region = find_selected_item_region()
+    # overview_region = find_overview_region()
+    # directional_scanner = find_directional_scanner_region()
+    #
+    # Capture screenshot
+    screenshot_jpeg = jpg_screenshot_of_the_selected_region(yellow_region)
 
-# selected_item_region = find_selected_item_region()
-# overview_region = find_overview_region()
-# directional_scanner = find_directional_scanner_region()
-#
-# Capture screenshot
-screenshot_jpeg = jpg_screenshot_of_the_selected_region(yellow_region)
-
-# Display the screenshot
-screenshot_jpeg.show()
-beep()
+    # Display the screenshot
+    screenshot_jpeg.show()
+    beep()

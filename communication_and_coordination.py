@@ -11,6 +11,7 @@ from constants import (
 import helper_functions as hf
 import navigation_and_movement as nm
 import tests as test
+import window_locator as wl
 
 
 def await_fleet_members_to_arrive() -> None:
@@ -154,6 +155,14 @@ def align_to_broadcast_reaction() -> bool:
     return False
 
 
+def drag_create_advert_into_region() -> None:
+    logging.error("Submit button not found. Trying to drag the window into region.")
+    region = (0, 0, int(wl.screen_width), int(wl.screen_height))
+    screenshot = hf.jpg_screenshot_of_the_selected_region(region, debug=False)
+    hf.search_for_string_in_region('create advert', region, screenshot, move_mouse_to_string=True)
+    pyautogui.dragTo(int(wl.screen_width) / 2, 0, duration=0.5)
+
+
 def create_fleet_advert() -> None:
     logging.info("Creating fleet advert.")
     hf.select_fleet_tab()
@@ -165,9 +174,18 @@ def create_fleet_advert() -> None:
     pyautogui.click()
     time.sleep(1)
     screenshot = hf.jpg_screenshot_of_the_selected_region(MID_TO_TOP_REGION)
-    hf.search_for_string_in_region('submit', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True)
-    pyautogui.click()
-    logging.info("Fleet advert created.")
+
+    if hf.search_for_string_in_region('submit', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        logging.info("Fleet advert created.")
+    else:
+        drag_create_advert_into_region()
+        if hf.search_for_string_in_region('submit', MID_TO_TOP_REGION, screenshot, move_mouse_to_string=True):
+            pyautogui.click()
+            logging.info("Fleet advert created.")
+        else:
+            logging.error("Submit button not found. Advert creation failed. Closing active window.")
+            pyautogui.hotkey('ctrl', 'w', interval=0.1)
 
 
 def form_fleet() -> None:

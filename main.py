@@ -7,6 +7,8 @@ import helper_functions as hf
 import protocols as ptc
 import navigation_and_movement as nm
 
+import communication_and_coordination as cc
+
 logfile_name = 'logfile.log'
 
 logging.basicConfig(filename=logfile_name,
@@ -16,7 +18,7 @@ logging.basicConfig(filename=logfile_name,
 
 
 def main() -> None:
-    hf.turn_recording_on_or_off()
+    # hf.turn_recording_on_or_off()
     time.sleep(8)
     if IS_FC:
         ptc.fc_mission_plan(True)
@@ -26,7 +28,9 @@ def main() -> None:
 
 if __name__ == "__main__":
     hf.beep_x_times(1)
-    atexit.register(hf.turn_recording_on_or_off)
-    main()
-    # nm.travel_home()
-
+    # atexit.register(hf.turn_recording_on_or_off)
+    # main()
+    nm.travel_home(True)
+    # cc.drag_create_advert_into_region()
+    hf.beep_x_times(3)
+    logging.info("Program ended.")

@@ -373,6 +373,7 @@ def explore_and_engage_outside_scan_range():
 
 
 def fc_mission_plan(defensive_plexing: bool) -> None:
+    logging.info("Fleet Commander mission plan starts.")
     destination_systems = list
     if defensive_plexing:
         amarr_frontline_systems = hf.get_amarr_frontline_systems_from_json()
@@ -393,6 +394,7 @@ def fc_mission_plan(defensive_plexing: bool) -> None:
 
 
 def fm_mission_plan() -> None:
+    logging.info("Fleet Member mission plan starts.")
     nm.travel_to_destination_as_fleet_member()
     for _ in range(MAX_NUMBER_OF_ATTEMPTS):
         if hf.generic_variables.destination.lower() == HOME_SYSTEM[0].lower():
