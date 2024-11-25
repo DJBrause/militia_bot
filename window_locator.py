@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 from PIL import ImageGrab, Image
-import easyocr
 import io
 import winsound
 import pyautogui
 from typing import Tuple
 import re
 
+import helper_functions as hf
 
 screen_width, screen_height = pyautogui.size()
 
@@ -35,7 +35,7 @@ TARGETS_REGION = '[2245, 0, 528, 193]'
 # LOCAL_REGION = '[49, 683, 597, 379]'
 
 # Initialize EasyOCR Reader
-reader = easyocr.Reader(['en'])
+# reader = easyocr.Reader(['en'])
 
 # Capture the screen
 
@@ -45,7 +45,7 @@ screenshot = np.array(ImageGrab.grab())
 gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
 
 # OCR to detect the window title using EasyOCR
-ocr_results = reader.readtext(gray)
+ocr_results = hf.ocr_reader.readtext(gray)
 
 
 # Function to locate window by name in OCR results
@@ -136,7 +136,7 @@ def find_local_region(easyocr_output):
             local_box = bbox
 
             # Step 2: Search for the number between square brackets after 'Local'
-            number_match = re.search(r'\[(\d+)\]', text)
+            number_match = re.search(r'\[(\d+)]', text)
             if number_match:
                 number = number_match.group(1)
             break

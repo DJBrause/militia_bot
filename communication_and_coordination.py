@@ -5,13 +5,13 @@ from typing import Tuple
 
 from constants import (
     FLEET_MEMBERS_COUNT, MAX_NUMBER_OF_ATTEMPTS, MID_TO_TOP_REGION, OVERVIEW_REGION, SCANNER_REGION,
-    TOP_LEFT_REGION, IS_FC
+    TOP_LEFT_REGION, IS_FC, FLEET_NAME
 )
 
 import helper_functions as hf
 import navigation_and_movement as nm
 import tests as test
-import window_locator as wl
+# import window_locator as wl
 
 
 def await_fleet_members_to_arrive() -> None:
@@ -231,7 +231,7 @@ def join_existing_fleet() -> None:
         pyautogui.click()
         time.sleep(0.2)
         screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
-        if hf.search_for_string_in_region('uncanny', SCANNER_REGION, screenshot, move_mouse_to_string=True):
+        if hf.search_for_string_in_region(FLEET_NAME, SCANNER_REGION, screenshot, move_mouse_to_string=True):
             pyautogui.rightClick()
             time.sleep(0.2)
             screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)

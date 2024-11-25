@@ -14,7 +14,7 @@ from PIL import Image
 import re
 import time
 import os
-from typing import List, Tuple, Union, Any, DefaultDict
+from typing import List, Tuple, Union, Any, DefaultDict, Optional
 
 from constants import (
     SCANNER_REGION, MORE_ICON, GUNS_BUTTON_COORDS, LOCAL_REGION, SCRAMBLER_EQUIPPED, SCRAM, PC_SPECIFIC_CONFIDENCE,
@@ -26,7 +26,7 @@ from constants import (
 
 import scanning_and_information_gathering as sig
 
-ocr_reader = Reader(['en'], gpu=True)
+ocr_reader = Reader(['en'], gpu=False)
 
 
 @dataclass
@@ -126,6 +126,18 @@ def extract_pilot_names_and_ship_types_from_screenshot() -> List[Tuple[str, Any]
         select_fw_tab()
 
 
+def get_pilot_name_from_broadcast(screenshot: Image) -> Optional[str]:
+    logging.info("Attempting to get the target name from broadcast.")
+    results = ocr_reader.readtext(screenshot)
+    for i, n, j in results:
+        if 'Target' in n:
+            name = n.split("Target")[1].split("(")[0].strip()
+            logging.info(f"Broadcast target was identified as: {name}")
+            return name
+    logging.warning("Failed to get the target name.")
+    return
+
+
 def clean_up_spaces(input_string: str) -> str:
     # Replaces multiple consecutive spaces with a single space.
     cleaned_string = re.sub(r'\s+', ' ', input_string.strip())
@@ -160,7 +172,8 @@ def get_module_buttons_coordinates() -> None:
 
 
 def get_initial_button_pixel_sum(region: Tuple) -> int:
-    # Sets initial pixel sums of module button. This should be done when they are off.
+    # Sets initial pixel sums of module button. It is needed during check to see if the button is on or off
+    # by the way of comparison of pixel sums. This function should run when the module is off.
     screenshot = jpg_screenshot_of_the_selected_region(region)
     hsv_screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv_screenshot, lowerb=MASK_LOWER_BAND, upperb=MASK_UPPER_BAND)
@@ -320,6 +333,15 @@ def select_fw_tab() -> bool:
     return False
 
 
+def select_target_name_in_overview(name: str) -> bool:
+    screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
+    if search_for_string_in_region(name, OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.click()
+        move_mouse_away_from_overview()
+        return True
+    return False
+
+
 def select_stations_and_beacons_tab() -> bool:
     screenshot = jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     if search_for_string_in_region('stations', OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
@@ -381,14 +403,14 @@ def target_lock_using_overview(target_name: str) -> bool:
     with pyautogui.hold('ctrl'):
         pyautogui.click()
         move_mouse_away_from_overview()
-    for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
-        logging.info(f"Checking if lock is complete. Current attempt: {attempt + 1}")
-        if sig.check_if_target_is_locked():
-            return True
-        screenshot = jpg_screenshot_of_the_selected_region(SELECTED_ITEM_REGION)
-        if not search_for_string_in_region(target_name, SELECTED_ITEM_REGION, screenshot):
-            logging.info("Target is no longer present in selected item window.")
-            return False
+    # for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
+    #     logging.info(f"Checking if lock is complete. Current attempt: {attempt + 1}")
+    if sig.check_if_target_is_locked():
+        return True
+    screenshot = jpg_screenshot_of_the_selected_region(SELECTED_ITEM_REGION)
+    if not search_for_string_in_region(target_name, SELECTED_ITEM_REGION, screenshot):
+        logging.info("Target is no longer present in selected item window.")
+        return False
     logging.info(f"Could not lock the target after {MAX_NUMBER_OF_ATTEMPTS} attempts.")
     return False
 
@@ -406,14 +428,14 @@ def target_lock_using_selected_item(target_name: str) -> bool:
             pyautogui.click()
             time.sleep(0.1)
             move_mouse_away_from_overview()
-            for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
-                logging.info(f"Checking if lock is complete. Current attempt: {attempt+1}")
-                if sig.check_if_target_is_locked():
-                    return True
-                screenshot = jpg_screenshot_of_the_selected_region(SELECTED_ITEM_REGION)
-                if not search_for_string_in_region(target_name, SELECTED_ITEM_REGION, screenshot):
-                    logging.info("Target is no longer present in selected item window.")
-                    return False
+            # for attempt in range(MAX_NUMBER_OF_ATTEMPTS):
+            #     logging.info(f"Checking if lock is complete. Current attempt: {attempt+1}")
+            if sig.check_if_target_is_locked():
+                return True
+            screenshot = jpg_screenshot_of_the_selected_region(SELECTED_ITEM_REGION)
+            if not search_for_string_in_region(target_name, SELECTED_ITEM_REGION, screenshot):
+                logging.info("Target is no longer present in selected item window.")
+                return False
             logging.info(f"Could not lock the target after {MAX_NUMBER_OF_ATTEMPTS} attempts.")
             return False
     except pyautogui.ImageNotFoundException:

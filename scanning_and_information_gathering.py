@@ -4,6 +4,7 @@ import logging
 
 import pyautogui
 import pyscreeze
+from PIL import Image
 
 from constants import (
     ALL_FRIGATES, AVOID, CAPACITOR_REGION, LOCAL_REGION, DEFAULT_CONFIDENCE, TARGETS_REGION,
@@ -26,9 +27,6 @@ def get_dscan_result() -> list:
     return frigate_on_scan
 
 
-
-
-
 def test_if_station_in_system() -> bool:
     screenshot = hf.jpg_screenshot_of_the_selected_region(OVERVIEW_REGION)
     if hf.search_for_string_in_region('station', OVERVIEW_REGION, screenshot):
@@ -37,8 +35,15 @@ def test_if_station_in_system() -> bool:
 
 
 # to be used by fm
-def check_for_target_broadcast() -> bool:
-    pass
+def lock_target_broadcast(screenshot: Image) -> bool:
+
+    if hf.search_for_string_in_region('target', SCANNER_REGION, screenshot, move_mouse_to_string=True):
+        pyautogui.keyDown('ctrl')
+        pyautogui.click()
+        pyautogui.keyUp('ctrl')
+        hf.clear_broadcast_history()
+        return True
+    return False
 
 
 def check_if_avoided_ship_is_on_scan_result(scan_result: list) -> bool:

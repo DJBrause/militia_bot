@@ -5,7 +5,8 @@ import logging
 from constants import (
     PROP_MOD, GUNS, OVERVIEW_REGION, SYSTEMS_TO_TRAVEL_TO, REPAIRER_EQUIPPED, MAX_NUMBER_OF_ATTEMPTS, DRONES_EQUIPPED,
     NPC_MINMATAR, SELECTED_ITEM_REGION, UNLOCK_TARGET_ICON, DEFAULT_CONFIDENCE, SHORT_SCAN_THRESHOLD, TIMEOUT_DURATION,
-    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM, OFFENSIVE_PLEXING, SCRAMBLER_EQUIPPED, WEBIFIER_EQUIPPED, SCRAM, WEB
+    REPAIRER_CYCLE_TIME, IS_FC, HOME_SYSTEM, OFFENSIVE_PLEXING, SCRAMBLER_EQUIPPED, WEBIFIER_EQUIPPED, SCRAM, WEB,
+    SCANNER_REGION
 )
 
 import communication_and_coordination as cc
@@ -117,11 +118,27 @@ def engage_hostiles() -> None:
 
             primary_target = detected_hostiles[0][0]
 
-            if engagement_protocol(primary_target):
+            if engage_the_target(primary_target):
                 cc.broadcast_enemy_spotted()
                 maintain_engagement(primary_target)
         else:
             break
+
+
+# Protocol for FM to engage target broadcast by the FC
+def engage_broadcast_target() -> None:
+    logging.info("Attempting to engage the broadcast target.")
+    if not hf.generic_variables.graphics_removed:
+        logging.info("Removing graphics for the time of engagement")
+        hf.remove_graphics()
+        hf.generic_variables.graphics_removed = True
+    screenshot = hf.jpg_screenshot_of_the_selected_region(SCANNER_REGION)
+    name = hf.get_pilot_name_from_broadcast(screenshot)
+    hf.select_target_name_in_overview(name)
+    hf.clear_broadcast_history()
+    if approach_target_before_engagement(name):
+        engage_the_target(name)
+        maintain_engagement(name)
 
 
 def restore_graphics_and_reload_ammo() -> None:
@@ -141,7 +158,7 @@ def engage_rat() -> None:
             logging.info("Removing graphics for the time of engagement")
             hf.remove_graphics()
             hf.generic_variables.graphics_removed = True
-        if engagement_protocol(rat):
+        if engage_the_target(rat):
             maintain_engagement(rat)
 
 
@@ -155,14 +172,14 @@ def attempt_to_select_the_enemy(name: str) -> bool:
         if hf.search_for_string_in_region(item, OVERVIEW_REGION, screenshot, move_mouse_to_string=True):
             pyautogui.click()
             time.sleep(0.1)
-            if engage_target_and_approach(item):
+            if approach_target_before_engagement(item):
                 return True
     logging.info("Enemy is no longer present in the overview.")
     return False
 
 
-def engage_target_and_approach(item: str) -> bool:
-    # Engages the target and initiates approach if present in selected items.
+def approach_target_before_engagement(item: str) -> bool:
+    # Initiates approach to target if it is present in selected items.
     if test.test_if_target_in_selected_items(item):
         nm.approach()
         if not hf.generic_variables.prop_module_on:
@@ -191,8 +208,8 @@ def attempt_to_target_lock_the_enemy(name: str) -> bool:
     return True
 
 
-def engagement_protocol(name: str) -> bool:
-    logging.info("Engagement protocol is active.")
+def engage_the_target(name: str) -> bool:
+    logging.info("Engaging target.")
     if DRONES_EQUIPPED:
         hf.launch_drones()
     if attempt_to_select_the_enemy(name):
@@ -226,6 +243,7 @@ def maintain_engagement(name: str) -> None:
             handle_locked_target()
         else:
             if not handle_unlocked_target(name):
+                restore_graphics_and_reload_ammo()
                 return
 
         if name == NPC_MINMATAR[0]:
@@ -258,7 +276,7 @@ def maintain_engagement(name: str) -> None:
 
 
 def handle_locked_target() -> None:
-    logging.info("Handling a locked target.")
+    logging.info("Attempting to approach, tackle and engage the locked target with drones.")
     nm.approach()
     time.sleep(0.1)
     hf.tackle_enemy_ship()
@@ -334,7 +352,7 @@ def reaction_to_possible_interception() -> None:
     if hostiles:
         logging.info(f"Hostiles are present in the overview: {hostiles}")
         cc.broadcast_enemy_spotted()
-        if engagement_protocol(hostiles[0][0]):
+        if engage_the_target(hostiles[0][0]):
             maintain_engagement(hostiles[0][0])
     nm.warp_to_safe_spot()
 

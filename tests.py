@@ -5,7 +5,7 @@ import pyscreeze
 from typing import Tuple
 import time
 import logging
-
+import os
 
 import helper_functions as hf
 import communication_and_coordination as cc
@@ -24,6 +24,43 @@ images_used_in_program = [UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON
                           MORE_ICON]
 
 
+required_image_files = [
+    'images/unlock_icon.PNG',
+    'images/cannot_lock.PNG',
+    'images/lock_target.PNG',
+    'images/scrambler_on.PNG',
+    'images/scrambler_on_small.PNG',
+    'images/webifier_on.PNG',
+    'images/web_small.PNG',
+    'images/laser_on.PNG',
+    'images/laser_on_small.PNG',
+    'images/scrambler_button.PNG',
+    'images/webifier_button.PNG',
+    'images/prop_mod_button.PNG',
+    'images/repairer_button.PNG',
+    'images/rat_icon.PNG',
+    'images/gate_on_route.PNG',
+    'images/destination_station.PNG',
+    'images/destination_home_station.PNG',
+    'images/dscan_slider.PNG',
+    'images/more_icon.PNG'
+]
+
+
+def test_images_folder():
+    missing_files = []
+    for file_path in required_image_files:
+        if not os.path.isfile(file_path):
+            missing_files.append(file_path)
+
+    if not missing_files:
+        print("\nAll required files are present.")
+    else:
+        print("\nMissing files:")
+        for file in missing_files:
+            print(f"- {file}")
+
+    assert not missing_files
 
 
 def test_check_region(region: Tuple, save_screenshot: bool = False) -> list:

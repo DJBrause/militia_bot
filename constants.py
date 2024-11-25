@@ -87,6 +87,7 @@ FW_SYSTEMS_URL = 'https://esi.evetech.net/latest/fw/systems/?datasource=tranquil
 
 
 FLEET_MEMBERS_COUNT = 0
+FLEET_NAME = 'uncanny'
 MAX_NUMBER_OF_ATTEMPTS = 30
 IS_FC = ast.literal_eval(os.environ.get('IS_FC'))
 DEFAULT_CONFIDENCE = 0.9
