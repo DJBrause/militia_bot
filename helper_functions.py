@@ -6,6 +6,7 @@ import pyautogui
 from easyocr import Reader
 import winsound
 import json
+import datetime
 
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -216,13 +217,16 @@ def prepare_module_buttons_coordinates_and_initial_pixel_sums() -> None:
 
 def jpg_screenshot_of_the_selected_region(region: Tuple, debug: bool = False) -> Image:
     screenshot = pyautogui.screenshot(region=region)
+
     if debug:
-        project_path = os.getcwd()
-        filename = 'debug_screenshot.jpeg'
-        file_path = os.path.join(project_path, filename)
-        screenshot = pyautogui.screenshot(region=region)
+        current_time = datetime.datetime.now().strftime("%H_%M_%S.%f")
+        screenshot_folder = os.path.join(os.getcwd(), "debug_screenshots")
+        os.makedirs(screenshot_folder, exist_ok=True)  # Create folder if it doesn't exist
+        filename = f"{current_time}_debug_screenshot.jpeg"
+        file_path = os.path.join(screenshot_folder, filename)
         screenshot.save(file_path, format="JPEG")
-        return
+        logging.debug(f"Screenshot saved as {filename}")
+
     temp_image = io.BytesIO()
     screenshot.save(temp_image, format="JPEG")
     temp_image.seek(0)

@@ -11,14 +11,14 @@ import helper_functions as hf
 import communication_and_coordination as cc
 import navigation_and_movement as nm
 from constants import (
-    SELECTED_ITEM_REGION, SCANNER_REGION, UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
+    SELECTED_ITEM_REGION, SCANNER_REGION, UNLOCK_TARGET_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
     SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL, RAT_ICON,
     GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER, MORE_ICON, DEFAULT_CONFIDENCE,
     LOCAL_REGION, SYSTEMS_TO_TRAVEL_TO, HOME_SYSTEM
 )
 import scanning_and_information_gathering as sig
 
-images_used_in_program = [UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
+images_used_in_program = [UNLOCK_TARGET_ICON, LOCK_TARGET_ICON, SCRAMBLER_ON_ICON,
                           SCRAMBLER_ON_ICON_SMALL, WEBIFIER_ON_ICON, WEBIFIER_ON_ICON_SMALL, LASER_ON, LASER_ON_SMALL,
                           RAT_ICON, GATE_ON_ROUTE, DESTINATION_STATION, DESTINATION_HOME_STATION, DSCAN_SLIDER,
                           MORE_ICON]
@@ -26,7 +26,6 @@ images_used_in_program = [UNLOCK_TARGET_ICON, CANNOT_LOCK_ICON, LOCK_TARGET_ICON
 
 required_image_files = [
     'images/unlock_icon.PNG',
-    'images/cannot_lock.PNG',
     'images/lock_target.PNG',
     'images/scrambler_on.PNG',
     'images/scrambler_on_small.PNG',
