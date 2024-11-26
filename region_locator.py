@@ -1,11 +1,10 @@
 import logging
+import re
+from typing import Any, Dict, Tuple
 
 import cv2
 import numpy as np
-import winsound
 import pyautogui
-from typing import Any, Dict, Tuple
-import re
 from dotenv import set_key
 
 import helper_functions as hf
@@ -21,10 +20,6 @@ SELECTED_ITEM = 'selected'
 LOCAL = 'local'
 
 window_names = [OVERVIEW, DIRECTIONAL_SCANNER, SELECTED_ITEM, LOCAL]
-
-
-def beep():
-    winsound.Beep(1400, 100)
 
 
 def locate_window_by_name(window_name: str) -> Tuple[bool, Any] | Tuple[bool, None]:
